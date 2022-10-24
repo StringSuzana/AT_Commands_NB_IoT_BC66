@@ -8,6 +8,28 @@ import os
 import binascii
 
 
+def getServerInfo():
+    pass
+
+
+def getAtCommandSequence():
+    pass
+
+
+def sendMessageToServer(message_text):
+    pass
+
+
+def sendTestMessageToServer():
+    # get parameters from Nb Iot
+    basic_info = getBasicInfo()
+    sendMessageToServer(basic_info)
+
+
+def getBasicInfo() -> string:
+    return "Basic info"
+
+
 class MessageValidator(Validator):
     def validate(self, document):
         ok = True
@@ -26,8 +48,8 @@ if __name__ == '__main__':
         Token.Question: '',
     })
 
-    custom_fig = Figlet(font='standard')
-    print(custom_fig.renderText('Nb-IoT BC66NA'))
+    custom_fig = Figlet(font='ogre')  # larry3d #ogre
+    print(custom_fig.renderText('N b - I o T'))
     questions = [
         {
             'type': 'list',
@@ -49,3 +71,10 @@ if __name__ == '__main__':
     ]
 
     answers = prompt(questions, style=style)
+    print(answers)
+    if answers.get('nb_iot_main_menu') == '3':
+        sendMessageToServer(answers['message_text'])
+    elif answers.get('nb_iot_main_menu') == '2':
+        sendTestMessageToServer()
+    elif answers.get('nb_iot_main_menu') == '1':
+        print(getBasicInfo())
