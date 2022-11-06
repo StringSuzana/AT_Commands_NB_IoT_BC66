@@ -11,7 +11,7 @@ from collections import deque
 
 if __name__ == '__main__':
 
-    with serial.serial_for_url('spy://COM10?file=test.txt', timeout=1) as s:
+    with serial.serial_for_url('spy://COM10?file=logs/test.txt', timeout=1) as s:
         print(f"On port : {s.name}")
         s.write(b'AT\r')
         s.write(b'AT+CGMI\r')  # Request Manufacturer Identification

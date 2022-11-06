@@ -1,6 +1,6 @@
 from PyInquirer import style_from_dict, Token, prompt, Separator, Validator, ValidationError
 from pyfiglet import Figlet
-
+from datetime import datetime
 import time
 import json
 import string
@@ -70,12 +70,22 @@ def readAtResponse() -> string:
         out += ser.read(1).decode('ASCII')
     if out != '':
         print(">> " + out)
-    return out
+    return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out + '=====================|\r'
 
 
-def establishSerialConnection():
+def establishSerialConnection() -> bool:
     global ser
     ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
+    while not ser.isOpen():
+        print('.')
+        continue
+    return ser.isOpen()
+
+
+def writeLinesToLogFile(text):
+    with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
+        text = text.replace('\r\n', '\r')
+        f.write(text)
 
 
 class MessageValidator(Validator):
@@ -120,10 +130,12 @@ if __name__ == '__main__':
     answers = prompt(questions, style=style)
 
     establishSerialConnection()
+
     print(answers)
     if answers.get('nb_iot_main_menu') == '3':
         sendMessageToServer(answers['message_text'])
     elif answers.get('nb_iot_main_menu') == '2':
         sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        getBasicInfo()
+        basicInfo = getBasicInfo()
+        writeLinesToLogFile(basicInfo)
