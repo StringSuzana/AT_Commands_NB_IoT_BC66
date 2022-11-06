@@ -82,7 +82,7 @@ def establishSerialConnection() -> bool:
     return ser.isOpen()
 
 
-def writeLinesToLogFile(text):
+def writeToLogFile(text):
     with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
         text = text.replace('\r\n', '\r')
         f.write(text)
@@ -138,4 +138,4 @@ if __name__ == '__main__':
         sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
         basicInfo = getBasicInfo()
-        writeLinesToLogFile(basicInfo)
+        writeToLogFile(basicInfo)
