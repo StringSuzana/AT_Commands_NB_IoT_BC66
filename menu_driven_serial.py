@@ -1,20 +1,35 @@
-from __future__ import print_function, unicode_literals
 from PyInquirer import style_from_dict, Token, prompt, Separator, Validator, ValidationError
 from pyfiglet import Figlet
 
+import time
 import json
 import string
 import os
 import binascii
+import serial as serial
 
-AT_FULL_PHONE_FUNCTIONALITY = "AT+CFUN=1"
-AT_OLD_SCRAMBLING_ALGORITHM = "AT+QSPCHSC=1"
-AT_SET_APN = "AT*MCGDEFCONT='IP','iot.ht.hr'"
-AT_RESET_MODULE = "AT+QRESET=1"
-AT_SM_LOCK = "AT+SM=LOCK"
-AT_TURN_OFF_PSM = "AT+CEREG=5"
-AT_CONNECT_STATUS = "AT+CSCON=1"
-AT_ENABLE_WAKEUP_INDICATION = "AT+QATWAKEUP=1"
+ATI = 'ATI'  # Display Product Identification Information
+AT_WRITE_FULL_PHONE_FUNCTIONALITY = 'AT+CFUN=1'
+AT_WRITE_OLD_SCRAMBLING_ALGORITHM = 'AT+QSPCHSC=1'
+AT_WRITE_APN = 'AT*MCGDEFCONT="IP","iot.ht.hr"'
+AT_RESET_MODULE = 'AT+QRESET=1'
+AT_WRITE_SM_LOCK = 'AT+SM=LOCK'  # => Cemu ovo sluzi? maknuti
+AT_WRITE_TURN_OFF_PSM = 'AT+CEREG=5'
+AT_WRITE_CONNECT_STATUS = 'AT+CSCON=1'
+AT_WRITE_ENABLE_WAKEUP_INDICATION = 'AT+QATWAKEUP=1'
+AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
+AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
+AT_READ_SIGNALING_STATUS = "AT+CSCON?"
+AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
+AT_WRITE_ATTACHED_STATE_GPRS = 'AT+CGATT=1'
+
+AT_WRITE_ACTIVATE_PDN_CTX = 'AT+QGACT=1,1,"iot.ht.hr"'  # Wrong cid?
+# AT_WRITE_ATTACHED_STATE_GPRS
+AT_TEST_EXTENDED_SIGNAL_QUALITY = 'AT+CESQ=?'
+AT_READ_EPS_NETWORK_REGISTRATION_STATUS = 'AT+CEREG?'
+AT_READ_PDP_CTX = 'AT+CGDCONT?'
+AT_WRITE_ACTIVATE_PDN_CTX_SECOND = 'AT+QGACT=1,2,"iot.ht.hr"'
+AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'
 
 
 def getServerInfo():
@@ -36,7 +51,31 @@ def sendTestMessageToServer():
 
 
 def getBasicInfo() -> string:
-    return "Basic info"
+    response = ''
+    sendAtCommand(ATI)
+    response += readAtResponse()
+    sendAtCommand(AT_READ_OPERATOR_SELECTION)
+    response += readAtResponse()
+    return response
+
+
+def sendAtCommand(command):
+    ser.write((command + '\r').encode('ASCII'))
+    time.sleep(1)
+
+
+def readAtResponse() -> string:
+    out = ''
+    while ser.in_waiting > 0:
+        out += ser.read(1).decode('ASCII')
+    if out != '':
+        print(">> " + out)
+    return out
+
+
+def establishSerialConnection():
+    global ser
+    ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
 
 
 class MessageValidator(Validator):
@@ -78,12 +117,13 @@ if __name__ == '__main__':
             'validate': MessageValidator
         }
     ]
-
     answers = prompt(questions, style=style)
+
+    establishSerialConnection()
     print(answers)
     if answers.get('nb_iot_main_menu') == '3':
         sendMessageToServer(answers['message_text'])
     elif answers.get('nb_iot_main_menu') == '2':
         sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        print(getBasicInfo())
+        getBasicInfo()
