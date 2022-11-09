@@ -13,7 +13,6 @@ AT_WRITE_FULL_PHONE_FUNCTIONALITY = 'AT+CFUN=1'
 AT_WRITE_OLD_SCRAMBLING_ALGORITHM = 'AT+QSPCHSC=1'
 AT_WRITE_APN = 'AT*MCGDEFCONT="IP","iot.ht.hr"'
 AT_RESET_MODULE = 'AT+QRESET=1'
-AT_WRITE_SM_LOCK = 'AT+SM=LOCK'  # => Cemu ovo sluzi? maknuti
 AT_WRITE_TURN_OFF_PSM = 'AT+CEREG=5'
 AT_WRITE_CONNECT_STATUS = 'AT+CSCON=1'
 AT_WRITE_ENABLE_WAKEUP_INDICATION = 'AT+QATWAKEUP=1'
@@ -31,31 +30,79 @@ AT_READ_PDP_CTX = 'AT+CGDCONT?'
 AT_WRITE_ACTIVATE_PDN_CTX_SECOND = 'AT+QGACT=1,2,"iot.ht.hr"'
 AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'
 
-
-def getServerInfo():
-    pass
-
-
-def getAtCommandSequence():
-    pass
+AT_BASIC_INFO_SEQUENCE = [ATI, AT_READ_OPERATOR_SELECTION, AT_READ_PDP_CTX, AT_READ_SHOW_PDP_ADDRESS]
+AT_SEND_UDP_PACKET_SEQUENCE = []
+AT_INITIAL_SETUP_SEQUENCE = []
 
 
-def sendMessageToServer(message_text):
-    pass
+class AtCommand:
+    def __init__(self, command, description):
+        self.command = command
+        self.description = description
+
+    def convertCommandToAscii(self):
+        pass
+
+    def convertCommandToBinary(self):
+        pass
 
 
-def sendTestMessageToServer():
-    # get parameters from Nb Iot
-    basic_info = getBasicInfo()
-    sendMessageToServer(basic_info)
+AT_BASIC_INFO_SEQUENCE_CLASSES = [AtCommand(ATI, "Display Product Identification Information"),
+                                  AtCommand(AT_READ_OPERATOR_SELECTION, "Read selected operator")]
+
+
+class Sender:
+    def __init__(self):
+        self.serverIpAddress = '20.234.113.19'
+        self.serverPort = '4444'
+        self.protocol = 'UDP'
+
+    def sendTestMessageToServer(self):
+        pass
+
+    @staticmethod
+    def getNbIotModuleInfo() -> string:
+        response = ''
+
+        sendAtCommand(ATI)
+        response += readAtResponse()
+
+        sendAtCommand(AT_READ_OPERATOR_SELECTION)
+        response += readAtResponse()
+        # while !isMessageOk(response) || !isMessageError(response)
+        # response += readAtResponse()
+        if isMessageOk(response):
+            print("Message ends with OK")
+        elif isMessageError(response):
+            print("Message error")
+        else:
+            print("AAAAAAAAAAAAAAAA")
+        return response
+
+    def executeAtCommandSequence(self, sequence):
+        # get list of commands and go through it
+        # if there is and error -> close connection
+        # or implement fallback methods
+        pass
+
+    def sendMessageToServer(message_text):
+        pass
+
+    def sendTestMessageToServer(self):
+        # get parameters from Nb Iot
+        basic_info = self.getNbIotModuleInfo()
+        self.sendMessageToServer(basic_info)
 
 
 def getBasicInfo() -> string:
     response = ''
+
     sendAtCommand(ATI)
     response += readAtResponse()
+
     sendAtCommand(AT_READ_OPERATOR_SELECTION)
     response += readAtResponse()
+
     return response
 
 
@@ -68,9 +115,21 @@ def readAtResponse() -> string:
     out = ''
     while ser.in_waiting > 0:
         out += ser.read(1).decode('ASCII')
+
     if out != '':
         print(">> " + out)
-    return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out + '=====================|\r'
+        # return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out + '=====================|\r'
+        return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out
+    else:
+        return ''
+
+
+def isMessageOk(whole_msg) -> bool:
+    return whole_msg[::-3] == "OK\r"
+
+
+def isMessageError(whole_msg) -> bool:
+    return whole_msg[::-5] == "ERROR"
 
 
 def establishSerialConnection() -> bool:
@@ -133,9 +192,12 @@ if __name__ == '__main__':
 
     print(answers)
     if answers.get('nb_iot_main_menu') == '3':
-        sendMessageToServer(answers['message_text'])
+        pass
+        # sendMessageToServer(answers['message_text'])
     elif answers.get('nb_iot_main_menu') == '2':
-        sendTestMessageToServer()
+        pass
+        # sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        basicInfo = getBasicInfo()
-        writeToLogFile(basicInfo)
+        # basicInfo = getBasicInfo()
+        # writeToLogFile(basicInfo)
+        writeToLogFile(Sender.getNbIotModuleInfo())
