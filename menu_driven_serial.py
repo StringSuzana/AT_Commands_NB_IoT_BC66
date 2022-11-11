@@ -67,7 +67,10 @@ class Sender:
     def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
         for i, at in enumerate(sequence):
-            print(f"\nIndex: {i} : Command: {at.command} |>>| {at.description}")
+            command_info = f'Index: {i} : Command: {at.command} |>>| {at.description}\r'
+            print(command_info)
+            whole_response += command_info
+
             self.sendAtCommand(at.command)
             whole_response += self.readAtResponse()
 
