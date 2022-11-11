@@ -60,91 +60,66 @@ class Sender:
     def sendTestMessageToServer(self):
         pass
 
-    @staticmethod
-    def getNbIotModuleInfo() -> string:
-        response = ''
-
-        sendAtCommand(ATI)
-        response += readAtResponse()
-
-        sendAtCommand(AT_READ_OPERATOR_SELECTION)
-        response += readAtResponse()
-        # while !isMessageOk(response) || !isMessageError(response)
-        # response += readAtResponse()
-        if isMessageOk(response):
-            print("Message ends with OK")
-        elif isMessageError(response):
-            print("Message error")
-        else:
-            print("AAAAAAAAAAAAAAAA")
+    def getNbIotModuleInfo(self) -> string:
+        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE_CLASSES)
         return response
 
-    def executeAtCommandSequence(self, sequence):
-        # get list of commands and go through it
-        # if there is and error -> close connection
-        # or implement fallback methods
-        pass
+    def executeAtCommandSequence(self, sequence) -> string:
+        whole_response = ''
+        for i, at in enumerate(sequence):
+            print(f"\nIndex: {i} : Command: {at.command} |>>| {at.description}")
+            self.sendAtCommand(at.command)
+            whole_response += self.readAtResponse()
+
+            while self.isMessageOk(whole_response) != True | self.isMessageError(whole_response) != True:
+                whole_response += self.readAtResponse()
+            print(f"Command {at.command} executed successfully.") if self.isMessageOk(whole_response) else print(
+                f"Command {at.command} executed with error.")
+        return whole_response
 
     def sendMessageToServer(message_text):
         pass
+
+    def sendAtCommand(self, command):
+        ser.write((command + '\r').encode('ASCII'))
+        time.sleep(1)
 
     def sendTestMessageToServer(self):
         # get parameters from Nb Iot
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
+    def readAtResponse(self) -> string:
+        out = ''
+        while ser.in_waiting > 0:
+            out += ser.read(1).decode('ASCII')
 
-def getBasicInfo() -> string:
-    response = ''
+        if out != '':
+            print(">> " + out)
+            # return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out + '=====================|\r'
+            return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out
+        else:
+            return ''
 
-    sendAtCommand(ATI)
-    response += readAtResponse()
+    def isMessageOk(self, whole_msg) -> bool:
+        return whole_msg.rstrip()[-2:].strip() == "OK"
 
-    sendAtCommand(AT_READ_OPERATOR_SELECTION)
-    response += readAtResponse()
-
-    return response
-
-
-def sendAtCommand(command):
-    ser.write((command + '\r').encode('ASCII'))
-    time.sleep(1)
-
-
-def readAtResponse() -> string:
-    out = ''
-    while ser.in_waiting > 0:
-        out += ser.read(1).decode('ASCII')
-
-    if out != '':
-        print(">> " + out)
-        # return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out + '=====================|\r'
-        return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out
-    else:
-        return ''
+    def isMessageError(self, whole_msg) -> bool:
+        return whole_msg.rstrip()[-5:].strip() == "ERROR"
 
 
-def isMessageOk(whole_msg) -> bool:
-    return whole_msg[::-3] == "OK\r"
+class Write:
+    @staticmethod
+    def toUniversalFile(text):
+        with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
+            text = text.replace('\r\n', '\r')
+            f.write(text)
 
-
-def isMessageError(whole_msg) -> bool:
-    return whole_msg[::-5] == "ERROR"
-
-
-def establishSerialConnection() -> bool:
-    global ser
-    ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
-    while not ser.isOpen():
-        print('.')
-        continue
-    return ser.isOpen()
-
-
-def writeToLogFile(text):
-    with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
-        text = text.replace('\r\n', '\r')
-        f.write(text)
+    @staticmethod
+    def toSeparateFile(text):
+        with open(file=f'logs/at_log_{datetime.now().strftime("d_%m_%Y_%Hh%Mm")}.txt', mode='w', encoding='ASCII') as f:
+            text = text.replace('\r\n', '\r')
+            f.write(text)
 
 
 class MessageValidator(Validator):
@@ -154,6 +129,15 @@ class MessageValidator(Validator):
         # print(document.text)
         if not ok:
             raise ValidationError(message='Invalid message.', cursor_position=len(document.text))
+
+
+def establishSerialConnection() -> bool:
+    global ser
+    ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
+    while not ser.isOpen():
+        print('.')
+        continue
+    return ser.isOpen()
 
 
 if __name__ == '__main__':
@@ -198,6 +182,4 @@ if __name__ == '__main__':
         pass
         # sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        # basicInfo = getBasicInfo()
-        # writeToLogFile(basicInfo)
-        writeToLogFile(Sender.getNbIotModuleInfo())
+        Write.toUniversalFile(Sender().getNbIotModuleInfo())
