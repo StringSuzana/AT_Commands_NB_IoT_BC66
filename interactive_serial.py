@@ -12,7 +12,7 @@ AT_GET = "AT"
 
 if __name__ == '__main__':
 
-    ser = serial.Serial(port="COM10", baudrate=9600, timeout=60)
+    ser = serial.Serial(port="COM10", baudrate=9600, timeout=600)
     ser.isOpen()
     input_command = 1
     print("Enter commands [E for Exit]")

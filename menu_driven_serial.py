@@ -1,12 +1,12 @@
-from PyInquirer import style_from_dict, Token, prompt, Separator, Validator, ValidationError
+from PyInquirer import style_from_dict, Token, prompt
 from pyfiglet import Figlet
 from datetime import datetime
 import time
-import json
 import string
-import os
-import binascii
 import serial as serial
+
+from LogWriter import Write
+from Menu import MessageValidator, MenuStyle
 
 ATI = 'ATI'  # Display Product Identification Information
 AT_WRITE_FULL_PHONE_FUNCTIONALITY = 'AT+CFUN=1'
@@ -22,17 +22,32 @@ AT_READ_SIGNALING_STATUS = "AT+CSCON?"
 AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
 AT_WRITE_ATTACHED_STATE_GPRS = 'AT+CGATT=1'
 
-AT_WRITE_ACTIVATE_PDN_CTX = 'AT+QGACT=1,1,"iot.ht.hr"'  # Wrong cid?
+AT_WRITE_ACTIVATE_PDN_CTX = 'AT+QGACT=1,1,"iot.ht.hr"'
 # AT_WRITE_ATTACHED_STATE_GPRS
 AT_TEST_EXTENDED_SIGNAL_QUALITY = 'AT+CESQ=?'
-AT_READ_EPS_NETWORK_REGISTRATION_STATUS = 'AT+CEREG?'
-AT_READ_PDP_CTX = 'AT+CGDCONT?'
-AT_WRITE_ACTIVATE_PDN_CTX_SECOND = 'AT+QGACT=1,2,"iot.ht.hr"'
-AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'
-
+AT_READ_EPS_NETWORK_REGISTRATION_STATUS = 'AT+CEREG?'  # +CEREG: 0,1
+AT_READ_PDP_CTX = 'AT+CGDCONT?'  # Read pdp context info. RESPONSE: +CGDCONT: 1,"IP","iot.ht.hr","10.157.140.5",0,0,0,,,,,,0,,0
+AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
+AT_READ_UE_IP_ADDRESS = 'AT+QIPADDR'  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
+# TCP/IP
+# 188.252.207.207 KOMP
+# 20.234.113.19 AZURE
+AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,0,0'  # contextID = 1, connectionid = 0, DIRECT PUSH MODE = 1
+# lokalno na raspberry     AT+QIOPEN=1,0,"UDP","188.252.207.207",4444,4444,0,0
+# AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4444,0,0,0' # contextID = 1, connectionid = 0, buffer = 1
+# AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"TCP","20.234.113.19",5555,0,1' # contextID = 1, connectionid = 0, DIRECT PUSH MODE = 1
+# AT+QISEND=0,5,12345
+# AT+QISENDEX=0,5,3132333435
+AT_CLOSE_SOCKET = 'AT+QICLOSE=0'
+AT_READ_SOCKET_STATE = 'AT+QISTATE=1,0'  # Query the connection status of socket service 0.
+# AT+QISEND=,0          #queries whether the data has reached the server.
+AT_GET_LAST_ERROR_DESCRIPTION = 'AT+QIGETERROR'
 AT_BASIC_INFO_SEQUENCE = [ATI, AT_READ_OPERATOR_SELECTION, AT_READ_PDP_CTX, AT_READ_SHOW_PDP_ADDRESS]
 AT_SEND_UDP_PACKET_SEQUENCE = []
-AT_INITIAL_SETUP_SEQUENCE = []
+AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCRAMBLING_ALGORITHM, AT_WRITE_APN,
+                             AT_WRITE_TURN_OFF_PSM, AT_WRITE_CONNECT_STATUS, AT_WRITE_ENABLE_WAKEUP_INDICATION,
+                             AT_WRITE_OPERATOR_SELECTION, AT_EXECUTE_EXTENDED_SIGNAL_QUALITY, AT_READ_SIGNALING_STATUS,
+                             AT_READ_OPERATOR_SELECTION, AT_WRITE_ATTACHED_STATE_GPRS]
 
 
 class AtCommand:
@@ -49,11 +64,15 @@ class AtCommand:
 
 AT_BASIC_INFO_SEQUENCE_CLASSES = [AtCommand(ATI, "Display Product Identification Information"),
                                   AtCommand(AT_READ_OPERATOR_SELECTION, "Read selected operator")]
+AT_SEND_UDP_PACKET_SEQUENCE_CLASSES = []
+
+AT_VERIFY_CONNECTION_TO_SERVER_CLASSES = [AtCommand(AT_READ_PDP_CTX, "Read pdp context."),
+                                          AtCommand(AT_READ_SHOW_PDP_ADDRESS, "Show Ip address."), ]
 
 
 class Sender:
     def __init__(self):
-        self.serverIpAddress = '20.234.113.19'
+        self.serverIpAddress = '20.234.113.19'  # TODO: REPLACE WITH NEW VM
         self.serverPort = '4444'
         self.protocol = 'UDP'
 
@@ -110,28 +129,9 @@ class Sender:
     def isMessageError(self, whole_msg) -> bool:
         return whole_msg.rstrip()[-5:].strip() == "ERROR"
 
-
-class Write:
-    @staticmethod
-    def toUniversalFile(text):
-        with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
-            text = text.replace('\r\n', '\r')
-            f.write(text)
-
-    @staticmethod
-    def toSeparateFile(text):
-        with open(file=f'logs/at_log_{datetime.now().strftime("d_%m_%Y_%Hh%Mm%Ss")}.txt', mode='w', encoding='ASCII') as f:
-            text = text.replace('\r\n', '\r')
-            f.write(text)
-
-
-class MessageValidator(Validator):
-    def validate(self, document):
-        ok = True
-        # Check for invalid characters
-        # print(document.text)
-        if not ok:
-            raise ValidationError(message='Invalid message.', cursor_position=len(document.text))
+    def isMessageResponse(self, whole_msg) -> bool:
+        # When AFTER OK, it should display some message
+        pass
 
 
 def establishSerialConnection() -> bool:
@@ -144,14 +144,6 @@ def establishSerialConnection() -> bool:
 
 
 if __name__ == '__main__':
-    style = style_from_dict({
-        Token.QuestionMark: '#E91E63 bold',
-        Token.Selected: '#673AB7 bold',
-        Token.Instruction: '',  # default
-        Token.Answer: '#2196f3 bold',
-        Token.Question: '',
-    })
-
     custom_fig = Figlet(font='ogre')  # larry3d #ogre
     print(custom_fig.renderText('N b - I o T'))
     questions = [
@@ -159,9 +151,10 @@ if __name__ == '__main__':
             'type': 'list',
             'name': 'nb_iot_main_menu',
             'message': 'Select what you want to do:',
-            'choices': ['1. Do you want to get basic info?',
-                        '2. Do you want to send basic test message to server?',
-                        '3. Do you want to send custom message?',
+            'choices': ['1. Print basic info to serial',
+                        '2. Send basic test message to server',
+                        '3. Send custom message to server',
+                        '4. Do connection sequence to server'
                         ],
             'filter': lambda val: val[0:1:]  # I want just the number
         },
@@ -173,7 +166,7 @@ if __name__ == '__main__':
             'validate': MessageValidator
         }
     ]
-    answers = prompt(questions, style=style)
+    answers = prompt(questions, style=MenuStyle.basic)
 
     establishSerialConnection()
 
