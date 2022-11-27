@@ -52,7 +52,7 @@ class Sender:
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
-    def readAtResponse(self) -> string:
+    def readAtResponse(self) -> str: # Make it return AtResponse
         out = ''
         while ser.in_waiting > 0:
             out += ser.read(1).decode('ASCII')

@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-from MenuDrivenSerial import Sender
-
 # TODO rewrite to AtCommand objects
 ATI = 'ATI'  # Display Product Identification Information
 AT_WRITE_FULL_PHONE_FUNCTIONALITY = 'AT+CFUN=1'
@@ -46,10 +44,16 @@ AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCR
 
 
 @dataclass
+class AtResponse:
+    isOk: bool
+    response: dict
+
+
+@dataclass
 class AtCommand:
     command: str
     description: str
-    read_response_method = Sender().readAtResponse()
+    read_response_method: AtResponse  # read content of response message
     max_wait_for_response: int = 60  # in seconds
     should_read_response: bool = False
 
