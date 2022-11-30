@@ -5,20 +5,43 @@ import time
 import string
 import serial as serial
 
+from AtCommands import AT_BASIC_INFO_SEQUENCE_CLASSES, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE
+from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 
 
+class SerialCommunication:
+    @staticmethod
+    def open() -> bool:
+        global ser
+        ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
+        while not ser.isOpen():
+            print('.')
+            continue
+        return ser.isOpen()
 
 
-class Sender:
+class NbIoTSender:
     def __init__(self):
-        self.serverIpAddress = '20.234.113.19'  # TODO: REPLACE WITH NEW VM
-        self.serverPort = '4444'
-        self.protocol = 'UDP'
+        self.serverIpAddress = Server.IP_ADDR
+        self.serverPort = Server.PORT
+        self.protocol = Server.UDP
+
+    def sendMessageToServer(self, message_text):
+        self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
+        # trnsform message into ...hex?
+        self.executeAtCommandSequence(AT_SEND_UDP_MESSAGE_SEQUENCE)
+        pass
 
     def sendTestMessageToServer(self):
-        pass
+        # get parameters from Nb Iot
+        basic_info = self.getNbIotModuleInfo()
+        self.sendMessageToServer(basic_info)
+
+    def sendAtCommand(self, command):
+        ser.write((command + '\r').encode('ASCII'))
+        time.sleep(1)
 
     def getNbIotModuleInfo(self) -> string:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE_CLASSES)
@@ -40,19 +63,7 @@ class Sender:
                 f"Command {at.command} executed with error.")
         return whole_response
 
-    def sendMessageToServer(message_text):
-        pass
-
-    def sendAtCommand(self, command):
-        ser.write((command + '\r').encode('ASCII'))
-        time.sleep(1)
-
-    def sendTestMessageToServer(self):
-        # get parameters from Nb Iot
-        basic_info = self.getNbIotModuleInfo()
-        self.sendMessageToServer(basic_info)
-
-    def readAtResponse(self) -> str: # Make it return AtResponse
+    def readAtResponse(self) -> str:  # Make it return AtResponse
         out = ''
         while ser.in_waiting > 0:
             out += ser.read(1).decode('ASCII')
@@ -67,6 +78,7 @@ class Sender:
         return whole_msg.rstrip()[-2:].strip() == "OK"
 
     def isMessageError(self, whole_msg) -> bool:
+        #if error=> read description with AT+QIGETERROR
         return whole_msg.rstrip()[-5:].strip() == "ERROR"
 
     def isMessageResponse(self, whole_msg) -> bool:
@@ -74,16 +86,8 @@ class Sender:
         pass
 
 
-def establishSerialConnection() -> bool:
-    global ser
-    ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
-    while not ser.isOpen():
-        print('.')
-        continue
-    return ser.isOpen()
-
-
 if __name__ == '__main__':
+    SerialCommunication.open()
     custom_fig = Figlet(font='ogre')  # larry3d #ogre
     print(custom_fig.renderText('N b - I o T'))
     questions = [
@@ -108,8 +112,6 @@ if __name__ == '__main__':
     ]
     answers = prompt(questions, style=MenuStyle.basic)
 
-    establishSerialConnection()
-
     print(answers)
     if answers.get('nb_iot_main_menu') == '3':
         pass
@@ -118,4 +120,4 @@ if __name__ == '__main__':
         pass
         # sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        Write.toUniversalFile(Sender().getNbIotModuleInfo())
+        Write.toUniversalFile(NbIoTSender().getNbIotModuleInfo())
