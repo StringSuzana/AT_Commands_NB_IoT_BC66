@@ -4,7 +4,8 @@ import time
 from dataclasses import dataclass
 from typing import List
 
-from AtCommands import AtCommand, AtResponse
+from AtCommand import AtCommand
+from AtResponse import AtResponse
 from ResponseStatus import Status
 
 

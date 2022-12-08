@@ -1,30 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import List
-
+from AtCommand import AtCommand
 from AtConstants import *
+from AtResponse import AtResponse
 from AtResponseReader import Read
-
 from ResponseStatus import Status
-
-
-@dataclass
-class AtResponse:
-    status: Status
-    response: List[str]
-    wanted_params: dict
-
-
-@dataclass
-class AtCommand:
-    command: str
-    description: str
-    expected_responses: List[AtResponse]
-    read_response_method: ()  # read content of response message
-    long_description: str = ""
-    max_wait_for_response: int = 1  # [s]
-
 
 at_read_ati = AtCommand(command=ATI, description="Display Product Identification Information.",
                         read_response_method=Read.answer,
