@@ -45,20 +45,21 @@ class NbIoTSender:
         ser.write((command + '\r').encode('ASCII'))
         time.sleep(1)
 
-    def getNbIotModuleInfo(self) -> string:
+    def getNbIotModuleInfo(self) -> str:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
 
     def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
         for i, at in enumerate(sequence):
-            command_info = f'Index: {i} : Command: {at.command} |>>| {at.description}\r'
-            print(command_info)
+            cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
+            print(cmd_and_descr)
             self.sendAtCommand(at.command)
-            whole_response += at.command
+            whole_response += cmd_and_descr
             at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
             if at_response is not None:
-                whole_response = whole_response.join(at_response.response)
+                resp = f'>>{"":>4}{",".join(at_response.response)}'
+                whole_response = whole_response + resp
         return whole_response
 
 
@@ -96,4 +97,4 @@ if __name__ == '__main__':
         pass
         # sendTestMessageToServer()
     elif answers.get('nb_iot_main_menu') == '1':
-        Write.toUniversalFile(NbIoTSender().getNbIotModuleInfo())
+        Write.toUniversalFile("".join(NbIoTSender().getNbIotModuleInfo()))

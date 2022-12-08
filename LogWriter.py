@@ -5,7 +5,6 @@ class Write:
     @staticmethod
     def toUniversalFile(text):
         with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
-            text = text.replace('\r\n', '\r')
             f.write(text)
 
     @staticmethod
