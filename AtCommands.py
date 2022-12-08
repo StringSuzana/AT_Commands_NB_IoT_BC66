@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import string
 import time
 from dataclasses import dataclass
+from typing import List
+
 from AtConstants import *
 
 from ResponseStatus import Status
@@ -10,74 +13,125 @@ from ResponseStatus import Status
 @dataclass
 class AtResponse:
     status: Status
-    response: dict
+    response: List[str]
 
 
 @dataclass
 class AtCommand:
     command: str
     description: str
+    expected_responses: List[AtResponse]
     read_response_method: ()  # read content of response message
     max_wait_for_response: int = 1  # [s] multiple of 1 seconds
-    expected_response: str = ""
 
 
 @dataclass
 class Read:
-    @staticmethod
-    def atResponse(command: AtCommand, func) -> AtResponse:
-        whole_msg_read = "SOMETHING SOMETHING OK"
-        wait_intervals = command.max_wait_for_response
-        result = Read.__responseStatus(whole_msg=whole_msg_read)
+    curren_response: str = ""
+    at_response = []
+    at_status = Status.WAITING
 
-        while (result.status == Status.WAITING) & wait_intervals > 0:
-            # read again
+    def atResponse(self, at_command_obj: AtCommand):
+        whole_msg_read = "OK\n+QAT:9,9,'I',,49\r"
+        # whole_msg_read = "\r"
+        wait_intervals = at_command_obj.max_wait_for_response
+
+        while (self.at_status == Status.WAITING) & (wait_intervals > 0):
+            self.readString(at_command_obj, whole_msg_read)
+            wait_intervals -= 1  # I want to sleep only 1 second at a time
             time.sleep(1)
-            result = Read.__responseStatus(whole_msg=whole_msg_read)
-            wait_intervals -= 1
+        return at_command_obj.read_response_method(self.at_status, self.at_response)
 
-        return func(result)
+    def readString(self, at_command_obj: AtCommand, string_from_serial: str):
+        if not string_from_serial:
+            return
+        # determine if it is done
+        self.curren_response += string_from_serial
+        response_array = self.curren_response.splitlines()
+        response_array = [el for el in response_array if el != '']
+        if len(response_array) == 0:
+            return
 
-    @staticmethod
-    def responseStatus(result: AtResponse) -> AtResponse:
-        # do string splitting
-        return AtResponse(status=Status.OK, response={})
+        for expected_response in at_command_obj.expected_responses:
+            if self.checkIfMessageIsWhole(expected_response.status, expected=expected_response.response,
+                                          given=response_array):
+                return
+        self.at_status = Status.WAITING
+        return
 
-    @staticmethod
-    def socketStatus(result: AtResponse) -> AtResponse:
-        # do string splitting
-        return AtResponse(status=Status.OK, response={})
+    def checkIfMessageIsWhole(self, status, expected, given) -> bool:
+        # Check if the arrays have the same length
+        if len(expected) != len(given):
+            return False
+        at_response_temp = []
+        # Check if the elements of the arrays are the same
+        for i in range(len(expected)):
+            if expected[i] == given[i]:
+                at_response_temp.append(given[i])
+                continue
+            else:
+                if ":" in expected[i]:
+                    # Check if the elements are both strings that start with "+Q_SOMETHING:"
+                    if given[i].startswith(expected[i][:expected[i].index(":")]):
+                        at_response_temp.append(given[i])
+                        continue
+                    # If the elements are not similar, return False
+                    else:
+                        return False
+                # If this is not a row with +QAT: response, return False
+                else:
+                    return False
 
-    @staticmethod
-    def ipAddress(result: AtResponse) -> AtResponse:
-        # wait for ok then read answer
-        return AtResponse(status=Status.OK, response={})
-
-    @staticmethod
-    def operatorSelection(result: AtResponse) -> AtResponse:
-        return AtResponse(status=Status.OK, response={})
-
-    @staticmethod
-    def __responseStatus(whole_msg) -> AtResponse:
-        if Read.__isMessageOk(whole_msg):
-            return AtResponse(status=Status.OK, response={})
-        if Read.__isMessageError(whole_msg):
-            return AtResponse(status=Status.ERROR, response={})  # read error message with AT+QIGETERROR somewhere above
+        if not at_response_temp:
+            self.at_response = [Status.ERROR.name]
         else:
-            return AtResponse(status=Status.WAITING, response={})  # Or got and answer +something without ok at the end
+            self.at_response = at_response_temp
+
+        self.at_status = status
+        return True
 
     @staticmethod
-    def __isMessageOk(whole_msg) -> bool:
-        return whole_msg.rstrip()[-2:].strip() == "OK"
+    def answer(result_status: Status, result_array: List[str]):
+        if result_status == Status.OK:
+            result_array = [res for res in result_array if res != Status.OK.name]
+            # tu hardcoded odgovor
+            print(result_array)
+            # PARSE THE RESPONSE IF STATUS IS OK
+            return result_array
+        print(result_status.name)
 
     @staticmethod
-    def __isMessageError(self, whole_msg) -> bool:
-        return whole_msg.rstrip()[-5:].strip() == "ERROR"
+    def readIpAddr(result_status: Status, result_array: List[str]):
+        if result_status == Status.OK:
+            result_array = [res for res in result_array if res != Status.OK.name]
+            # tu hardcoded odgovor
+            print(result_array)
+            # PARSE THE RESPONSE IF STATUS IS OK
+            return result_array
+        print(result_status.name)
+
+    @staticmethod
+    def socketStatus(result_status: Status, result_array: List[str]):
+        # Here comes hardcoded index of an answer
+        return result_array
+
+    @staticmethod
+    def ipAddress(result_status: Status, result_array: List[str]):
+        # Here comes hardcoded index of an answer
+        return result_array
+
+    @staticmethod
+    def operatorSelection(result_status: Status, result_array: List[str]):
+        # Here comes hardcoded index of an answer
+        return result_array
 
 
 at_read_ati = AtCommand(command=ATI, description="Display Product Identification Information",
-                        max_wait_for_response=1, read_response_method=Read.socketStatus,
-                        expected_response="OK")
+                        read_response_method=Read.answer,
+                        expected_responses=[AtResponse(Status.OK, response=["Quectel_Ltd", "Quectel_BC66:<objectId>",
+                                                                            "Revision: BC66NBR01A01:<revision>", "OK"]),
+                                            AtResponse(Status.ERROR, response=["ERROR"])],
+                        max_wait_for_response=1)
 
 at_read_operator_selection = AtCommand(command=AT_READ_OPERATOR_SELECTION, description="Read selected operator",
                                        max_wait_for_response=1, read_response_method=Read.responseStatus,
