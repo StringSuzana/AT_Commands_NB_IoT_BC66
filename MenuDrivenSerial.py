@@ -5,7 +5,8 @@ import time
 import string
 import serial as serial
 
-from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, Read, AtResponse
+from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, AtResponse
+from AtResponseReader import Read
 from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
