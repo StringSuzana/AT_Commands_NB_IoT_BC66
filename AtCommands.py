@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import string
 import time
 from dataclasses import dataclass
 from typing import List
@@ -14,6 +13,7 @@ from ResponseStatus import Status
 class AtResponse:
     status: Status
     response: List[str]
+    wanted_params: dict
 
 
 @dataclass
@@ -23,7 +23,7 @@ class AtCommand:
     expected_responses: List[AtResponse]
     read_response_method: ()  # read content of response message
     long_description: str = ""
-    max_wait_for_response: int = 1  # [s] multiple of 1 seconds
+    max_wait_for_response: int = 1  # [s]
 
 
 @dataclass
@@ -32,24 +32,40 @@ class Read:
     at_response = []
     at_status = Status.WAITING
 
-    def atResponse(self, at_command_obj: AtCommand):
-        whole_msg_read = "OK\n+QAT:9,9,'I',,49\r"
-        # whole_msg_read = "\r"
+    def atResponse(self, serial, at_command_obj: AtCommand):
+        # TODO: READ FROM SERIAL
+        # whole_msg_read = "OK\n+QAT:9,9,'I',,49\r"
+
+        serial_msg = Read.fromSerial(serial)
         wait_intervals = at_command_obj.max_wait_for_response
 
-        while (self.at_status == Status.WAITING) & (wait_intervals > 0):
-            self.readString(at_command_obj, whole_msg_read)
+        while (self.at_status == Status.WAITING) & (wait_intervals >= 0):
+            self.parseMessage(at_command_obj, serial_msg)
+            serial_msg = Read.fromSerial(serial)
             wait_intervals -= 1  # I want to sleep only 1 second at a time
             time.sleep(1)
         return at_command_obj.read_response_method(self.at_status, self.at_response)
 
-    def readString(self, at_command_obj: AtCommand, string_from_serial: str):
+    @staticmethod
+    def fromSerial(serial) -> str:  # Make it return AtResponse
+        out = ''
+        while serial.in_waiting > 0:
+            out += serial.read(1).decode('ASCII')
+
+        if out != '':
+            print(">> " + out)
+            return out
+        else:
+            return ''
+
+    def parseMessage(self, at_command_obj: AtCommand, string_from_serial: str):
         if not string_from_serial:
             return
         # determine if it is done
         self.curren_response += string_from_serial
         response_array = self.curren_response.splitlines()
-        response_array = [el for el in response_array if el != '']
+        # Remove empty string elements and remove the command that was sent because we want to deal only with responses
+        response_array = [el for el in response_array if (el != '') & (el != at_command_obj.command)]
         if len(response_array) == 0:
             return
 
@@ -99,9 +115,10 @@ class Read:
             if len(result_array) == 0:
                 print(result_status.name)
             else:
-                print(result_array)
+                print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+                return AtResponse(status=result_status, response=result_array, wanted_params={"wanted_param": "Value1"})
             # PARSE THE RESPONSE IF STATUS IS OK
-            return result_array
+            return AtResponse(status=result_status, response=result_array, wanted_params={"wanted_param": "Value1"})
         print(result_status.name)
 
     @staticmethod
@@ -132,16 +149,18 @@ class Read:
 
 at_read_ati = AtCommand(command=ATI, description="Display Product Identification Information.",
                         read_response_method=Read.answer,
-                        expected_responses=[AtResponse(Status.OK, response=["Quectel_Ltd", "Quectel_BC66:<objectId>",
-                                                                            "Revision: BC66NBR01A01:<revision>", "OK"]),
-                                            AtResponse(Status.ERROR, response=["ERROR"])],
+                        expected_responses=[AtResponse(Status.OK, response=["Quectel_Ltd", "Quectel_BC66NA",
+                                                                            "Revision: BC66NBR01A01:<revision>", "OK"],
+                                                       wanted_params={"revision": ""}),
+                                            AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                         max_wait_for_response=1)
 
 at_read_operator_selection = AtCommand(command=AT_READ_OPERATOR_SELECTION, description="Read selected operator.",
                                        read_response_method=Read.answer,
                                        expected_responses=[
-                                           AtResponse(Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"]),
-                                           AtResponse(Status.ERROR, response=["ERROR"])],
+                                           AtResponse(Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"], wanted_params={}),
+                                           AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})
+                                       ],
                                        max_wait_for_response=1)
 
 at_write_full_phone_functionality = AtCommand(command=AT_WRITE_FULL_PHONE_FUNCTIONALITY,
@@ -155,8 +174,8 @@ at_write_full_phone_functionality = AtCommand(command=AT_WRITE_FULL_PHONE_FUNCTI
                                               read_response_method=Read.answer,
                                               expected_responses=[
                                                   AtResponse(Status.OK,
-                                                             response=["OK"]),
-                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                                             response=["OK"], wanted_params={}),
+                                                  AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                               max_wait_for_response=85)
 
 at_write_old_scrambling_algorithm = AtCommand(command=AT_WRITE_OLD_SCRAMBLING_ALGORITHM,
@@ -167,8 +186,8 @@ at_write_old_scrambling_algorithm = AtCommand(command=AT_WRITE_OLD_SCRAMBLING_AL
                                               read_response_method=Read.answer,
                                               expected_responses=[
                                                   AtResponse(Status.OK,
-                                                             response=["+QSPCHSC: (list of supported <mode>s)", "OK"]),
-                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                                             response=["+QSPCHSC: (list of supported <mode>s)", "OK"], wanted_params={}),
+                                                  AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                               max_wait_for_response=1)
 at_write_eps_status_codes = AtCommand(command=AT_WRITE_EPS_STATUS_CODES,
                                       description="Write URC for EPS Network Registration Status.",
@@ -178,8 +197,8 @@ at_write_eps_status_codes = AtCommand(command=AT_WRITE_EPS_STATUS_CODES,
                                       expected_responses=[
                                           AtResponse(Status.OK, response=[
                                               "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
-                                              "OK"]),
-                                          AtResponse(Status.ERROR, response=["ERROR"])],
+                                              "OK"], wanted_params={}),
+                                          AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                       max_wait_for_response=1)
 
 at_write_turn_off_psm = AtCommand(command=AT_WRITE_TURN_OFF_PSM, description="Turn off Power Saving Mode.",
@@ -188,8 +207,8 @@ at_write_turn_off_psm = AtCommand(command=AT_WRITE_TURN_OFF_PSM, description="Tu
                                                    " requested extended periodic TAU value in E-UTRAN and the requested Active Time value.",
                                   read_response_method=Read.answer,
                                   expected_responses=[
-                                      AtResponse(Status.OK, response=["OK"]),
-                                      AtResponse(Status.ERROR, response=["ERROR"])],
+                                      AtResponse(Status.OK, response=["OK"], wanted_params={}),
+                                      AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                   max_wait_for_response=1)
 
 at_write_connection_status_enable_urc = AtCommand(command=AT_WRITE_CONNECTION_STATUS_URC,
@@ -200,8 +219,8 @@ at_write_connection_status_enable_urc = AtCommand(command=AT_WRITE_CONNECTION_ST
                                                                    "connection mode of the MT is changed.",
                                                   read_response_method=Read.answer,
                                                   expected_responses=[
-                                                      AtResponse(Status.OK, response=["OK"]),
-                                                      AtResponse(Status.ERROR, response=["ERROR"])],
+                                                      AtResponse(Status.OK, response=["OK"], wanted_params={}),
+                                                      AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                                   max_wait_for_response=1)
 
 at_read_connection_status = AtCommand(command=AT_READ_CONNECTION_STATUS,
@@ -211,24 +230,24 @@ at_read_connection_status = AtCommand(command=AT_READ_CONNECTION_STATUS,
                                                        "This state is only updated when radio events (sending and receiving) take place",
                                       read_response_method=Read.answer,
                                       expected_responses=[
-                                          AtResponse(Status.OK, response=["+CSCON:<n>,<mode>", "OK"]),
-                                          AtResponse(Status.ERROR, response=["ERROR"])],
+                                          AtResponse(Status.OK, response=["+CSCON:<n>,<mode>", "OK"], wanted_params={}),
+                                          AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                       max_wait_for_response=1)
 
 at_write_enable_wakeup_indication = AtCommand(command=AT_WRITE_ENABLE_WAKEUP_INDICATION,
                                               description="Enable Wakeup indication",
                                               read_response_method=Read.answer,
                                               expected_responses=[
-                                                  AtResponse(Status.OK, response=["OK"]),
-                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                                  AtResponse(Status.OK, response=["OK"], wanted_params={}),
+                                                  AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                               max_wait_for_response=1)
 
 at_read_is_wakeup_indication_enabled = AtCommand(command=AT_READ_IS_WAKEUP_INDICATION_ENABLED,
                                                  description="Read if wakeup indication is enabled",
                                                  read_response_method=Read.answer,
                                                  expected_responses=[
-                                                     AtResponse(Status.OK, response=["+QATWAKEUP: <enable>", "OK"]),
-                                                     AtResponse(Status.ERROR, response=["ERROR"])],
+                                                     AtResponse(Status.OK, response=["+QATWAKEUP: <enable>", "OK"], wanted_params={}),
+                                                     AtResponse(Status.ERROR, response=["ERROR"], wanted_params={})],
                                                  max_wait_for_response=1)
 
 AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCRAMBLING_ALGORITHM,

@@ -5,7 +5,7 @@ import time
 import string
 import serial as serial
 
-from AtCommands import AT_BASIC_INFO_SEQUENCE_CLASSES, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE
+from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, Read, AtResponse
 from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
@@ -44,7 +44,7 @@ class NbIoTSender:
         time.sleep(1)
 
     def getNbIotModuleInfo(self) -> string:
-        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE_CLASSES)
+        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
 
     def executeAtCommandSequence(self, sequence) -> string:
@@ -52,38 +52,12 @@ class NbIoTSender:
         for i, at in enumerate(sequence):
             command_info = f'Index: {i} : Command: {at.command} |>>| {at.description}\r'
             print(command_info)
-            whole_response += command_info
-
             self.sendAtCommand(at.command)
-            whole_response += self.readAtResponse()
-
-            while self.isMessageOk(whole_response) != True | self.isMessageError(whole_response) != True:
-                whole_response += self.readAtResponse()
-            print(f"Command {at.command} executed successfully.") if self.isMessageOk(whole_response) else print(
-                f"Command {at.command} executed with error.")
+            whole_response += at.command
+            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+            if at_response is not None:
+                whole_response = whole_response.join(at_response.response)
         return whole_response
-
-    def readAtResponse(self) -> str:  # Make it return AtResponse
-        out = ''
-        while ser.in_waiting > 0:
-            out += ser.read(1).decode('ASCII')
-
-        if out != '':
-            print(">> " + out)
-            return datetime.now().strftime("%d-%m-%Y, %H:%M:%S") + " |   " + out
-        else:
-            return ''
-
-    def isMessageOk(self, whole_msg) -> bool:
-        return whole_msg.rstrip()[-2:].strip() == "OK"
-
-    def isMessageError(self, whole_msg) -> bool:
-        #if error=> read description with AT+QIGETERROR
-        return whole_msg.rstrip()[-5:].strip() == "ERROR"
-
-    def isMessageResponse(self, whole_msg) -> bool:
-        # When AFTER OK, it should display some message
-        pass
 
 
 if __name__ == '__main__':
