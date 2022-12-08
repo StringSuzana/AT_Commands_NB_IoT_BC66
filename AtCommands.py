@@ -224,7 +224,7 @@ at_write_enable_wakeup_indication = AtCommand(command=AT_WRITE_ENABLE_WAKEUP_IND
                                               max_wait_for_response=1)
 
 at_read_is_wakeup_indication_enabled = AtCommand(command=AT_READ_IS_WAKEUP_INDICATION_ENABLED,
-                                                 description="Read if wakeup infication is enabled",
+                                                 description="Read if wakeup indication is enabled",
                                                  read_response_method=Read.answer,
                                                  expected_responses=[
                                                      AtResponse(Status.OK, response=["+QATWAKEUP: <enable>", "OK"]),
