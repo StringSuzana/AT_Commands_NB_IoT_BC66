@@ -22,6 +22,7 @@ class AtCommand:
     description: str
     expected_responses: List[AtResponse]
     read_response_method: ()  # read content of response message
+    long_description: str = ""
     max_wait_for_response: int = 1  # [s] multiple of 1 seconds
 
 
@@ -94,8 +95,11 @@ class Read:
     def answer(result_status: Status, result_array: List[str]):
         if result_status == Status.OK:
             result_array = [res for res in result_array if res != Status.OK.name]
-            # tu hardcoded odgovor
-            print(result_array)
+            # In each method I know where exactly should information be in a given string
+            if len(result_array) == 0:
+                print(result_status.name)
+            else:
+                print(result_array)
             # PARSE THE RESPONSE IF STATUS IS OK
             return result_array
         print(result_status.name)
@@ -126,44 +130,106 @@ class Read:
         return result_array
 
 
-at_read_ati = AtCommand(command=ATI, description="Display Product Identification Information",
+at_read_ati = AtCommand(command=ATI, description="Display Product Identification Information.",
                         read_response_method=Read.answer,
                         expected_responses=[AtResponse(Status.OK, response=["Quectel_Ltd", "Quectel_BC66:<objectId>",
                                                                             "Revision: BC66NBR01A01:<revision>", "OK"]),
                                             AtResponse(Status.ERROR, response=["ERROR"])],
                         max_wait_for_response=1)
 
-at_read_operator_selection = AtCommand(command=AT_READ_OPERATOR_SELECTION, description="Read selected operator",
-                                       max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                       expected_response="OK")
+at_read_operator_selection = AtCommand(command=AT_READ_OPERATOR_SELECTION, description="Read selected operator.",
+                                       read_response_method=Read.answer,
+                                       expected_responses=[
+                                           AtResponse(Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"]),
+                                           AtResponse(Status.ERROR, response=["ERROR"])],
+                                       max_wait_for_response=1)
 
-at_write_full_phone_functionality = AtCommand(command=AT_WRITE_FULL_PHONE_FUNCTIONALITY, description="",
-                                              max_wait_for_response=85, read_response_method=Read.responseStatus,
-                                              expected_response="OK")
+at_write_full_phone_functionality = AtCommand(command=AT_WRITE_FULL_PHONE_FUNCTIONALITY,
+                                              description="Select FULL functionality in the MT (Mobile Termination).",
+                                              long_description="This Write Command selects the level of functionality in the MT. "
+                                                               "Level Full_functionality (1) is where the highest level of power is drawn. "
+                                                               "Minimum_functionality (0) is where minimum power is drawn."
+                                                               "Additionally available: "
+                                                               "(4) Disable RF transmitting and receiving &"
+                                                               "(7) Disable USIM only. RF transmitting and receiving circuits are still active.",
+                                              read_response_method=Read.answer,
+                                              expected_responses=[
+                                                  AtResponse(Status.OK,
+                                                             response=["OK"]),
+                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                              max_wait_for_response=85)
 
-at_write_old_scrambling_algorithm = AtCommand(command=AT_WRITE_OLD_SCRAMBLING_ALGORITHM, description="",
-                                              max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                              expected_response="OK")
+at_write_old_scrambling_algorithm = AtCommand(command=AT_WRITE_OLD_SCRAMBLING_ALGORITHM,
+                                              description="Select old scrambling code.",
+                                              long_description="Used for selecting new or old scrambling code. "
+                                                               "This is because code has been updated by 3GPPP,"
+                                                               " and UE needs to select correct code for network.",
+                                              read_response_method=Read.answer,
+                                              expected_responses=[
+                                                  AtResponse(Status.OK,
+                                                             response=["+QSPCHSC: (list of supported <mode>s)", "OK"]),
+                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                              max_wait_for_response=1)
+at_write_eps_status_codes = AtCommand(command=AT_WRITE_EPS_STATUS_CODES,
+                                      description="Write URC for EPS Network Registration Status.",
+                                      long_description="This Write Command configures the different unsolicited result codes for "
+                                                       "EPS Network Registration Status.",
+                                      read_response_method=Read.answer,
+                                      expected_responses=[
+                                          AtResponse(Status.OK, response=[
+                                              "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
+                                              "OK"]),
+                                          AtResponse(Status.ERROR, response=["ERROR"])],
+                                      max_wait_for_response=1)
 
-at_write_eps_status_codes = AtCommand(command=AT_WRITE_EPS_STATUS_CODES, description="",
-                                      max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                      expected_response="OK")
+at_write_turn_off_psm = AtCommand(command=AT_WRITE_TURN_OFF_PSM, description="Turn off Power Saving Mode.",
+                                  long_description="This Write Command controls the setting of the UE's power saving mode (PSM) parameters."
+                                                   "It controls whether the UE wants to apply PSM or not, as well as the"
+                                                   " requested extended periodic TAU value in E-UTRAN and the requested Active Time value.",
+                                  read_response_method=Read.answer,
+                                  expected_responses=[
+                                      AtResponse(Status.OK, response=["OK"]),
+                                      AtResponse(Status.ERROR, response=["ERROR"])],
+                                  max_wait_for_response=1)
 
-at_write_turn_off_psm = AtCommand(command=AT_WRITE_TURN_OFF_PSM, description="",
-                                  max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                  expected_response="OK")
+at_write_connection_status_enable_urc = AtCommand(command=AT_WRITE_CONNECTION_STATUS_URC,
+                                                  description="This Write Command controls the presentation of an URC.",
+                                                  long_description="This Write Command controls the presentation of an URC. "
+                                                                   "If you write <n>=1, "
+                                                                   "then  +CSCON: <mode> is sent from the MT (Mobile Termination) when the "
+                                                                   "connection mode of the MT is changed.",
+                                                  read_response_method=Read.answer,
+                                                  expected_responses=[
+                                                      AtResponse(Status.OK, response=["OK"]),
+                                                      AtResponse(Status.ERROR, response=["ERROR"])],
+                                                  max_wait_for_response=1)
 
-at_write_connection_status_urc = AtCommand(command=AT_WRITE_CONNECTION_STATUS_URC, description="",
-                                           max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                           expected_response="OK")
+at_read_connection_status = AtCommand(command=AT_READ_CONNECTION_STATUS,
+                                      description="TA’s perceived radio connection status to the base station.",
+                                      long_description="Read details of the TA’s perceived radio connection status to the base station. "
+                                                       "Response is an indication of the current state <mode> 0=idle, 1=connected. "
+                                                       "This state is only updated when radio events (sending and receiving) take place",
+                                      read_response_method=Read.answer,
+                                      expected_responses=[
+                                          AtResponse(Status.OK, response=["+CSCON:<n>,<mode>", "OK"]),
+                                          AtResponse(Status.ERROR, response=["ERROR"])],
+                                      max_wait_for_response=1)
 
-at_read_connection_status = AtCommand(command=AT_READ_CONNECTION_STATUS, description="",
-                                      max_wait_for_response=1, read_response_method=None,
-                                      expected_response="??")
+at_write_enable_wakeup_indication = AtCommand(command=AT_WRITE_ENABLE_WAKEUP_INDICATION,
+                                              description="Enable Wakeup indication",
+                                              read_response_method=Read.answer,
+                                              expected_responses=[
+                                                  AtResponse(Status.OK, response=["OK"]),
+                                                  AtResponse(Status.ERROR, response=["ERROR"])],
+                                              max_wait_for_response=1)
 
-at_write_enable_wakeup_indication = AtCommand(command=AT_WRITE_ENABLE_WAKEUP_INDICATION, description="",
-                                              max_wait_for_response=1, read_response_method=Read.responseStatus,
-                                              expected_response="OK")
+at_read_is_wakeup_indication_enabled = AtCommand(command=AT_READ_IS_WAKEUP_INDICATION_ENABLED,
+                                                 description="Read if wakeup infication is enabled",
+                                                 read_response_method=Read.answer,
+                                                 expected_responses=[
+                                                     AtResponse(Status.OK, response=["+QATWAKEUP: <enable>", "OK"]),
+                                                     AtResponse(Status.ERROR, response=["ERROR"])],
+                                                 max_wait_for_response=1)
 
 AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCRAMBLING_ALGORITHM,
                              AT_WRITE_TURN_OFF_PSM, AT_WRITE_CONNECTION_STATUS_URC, AT_WRITE_ENABLE_WAKEUP_INDICATION,
