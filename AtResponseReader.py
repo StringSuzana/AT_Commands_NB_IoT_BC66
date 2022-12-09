@@ -50,13 +50,12 @@ class Read:
             return
 
         for expected_response in at_command_obj.expected_responses:
-            if self.checkIfMessageIsWhole(expected_response.status, expected=expected_response.response,
-                                          given=response_array):
+            if self.checkIfMessageIsWhole(for_status=expected_response.status, expected=expected_response.response, given=response_array):
                 return
         self.at_status = Status.WAITING
         return
 
-    def checkIfMessageIsWhole(self, status, expected, given) -> bool:
+    def checkIfMessageIsWhole(self, for_status, expected, given) -> bool:
         # Check if the arrays have the same length
         if len(expected) != len(given):
             return False
@@ -84,7 +83,7 @@ class Read:
         else:
             self.at_response = at_response_temp
 
-        self.at_status = status
+        self.at_status = for_status
         return True
 
     @staticmethod

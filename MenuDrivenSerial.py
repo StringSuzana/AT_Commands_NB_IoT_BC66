@@ -32,7 +32,7 @@ class NbIoTSender:
 
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
-        # trnsform message into ...hex?
+        # transform message into ...hex?
         self.executeAtCommandSequence(AT_SEND_UDP_MESSAGE_SEQUENCE)
         pass
 
