@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from AtCommand import AtCommand
-from AtResponse import AtResponse
+from AtResponse import AtResponse, Param
 from ResponseStatus import Status
 
 
@@ -14,6 +14,7 @@ class Read:
     curren_response: str = ""
     at_response = []
     at_status = Status.WAITING
+    at_expected_response: AtResponse = None
 
     def atResponse(self, serial, at_command_obj: AtCommand):
         serial_msg = Read.fromSerial(serial)
@@ -24,7 +25,7 @@ class Read:
             serial_msg = Read.fromSerial(serial)
             wait_intervals -= 1  # I want to sleep only 1 second at a time
             time.sleep(1)
-        return at_command_obj.read_response_method(self.at_status, self.at_response)
+        return at_command_obj.read_response_method(self.at_status, self.at_response, self.at_expected_response)
 
     @staticmethod
     def fromSerial(serial) -> str:  # Make it return AtResponse
@@ -51,6 +52,7 @@ class Read:
 
         for expected_response in at_command_obj.expected_responses:
             if self.checkIfMessageIsWhole(for_status=expected_response.status, expected=expected_response.response, given=response_array):
+                self.at_expected_response = expected_response
                 return
         self.at_status = Status.WAITING
         return
@@ -86,22 +88,40 @@ class Read:
         self.at_status = for_status
         return True
 
+    '''
+    Below are methods for referencing in At commands
+    in read_response_method property
+    '''
     @staticmethod
-    def answer(result_status: Status, result_array: List[str]):
+    def answer(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         if result_status == Status.OK:
-            result_array = [res for res in result_array if res != Status.OK.name]
-            # In each method I know where exactly should information be in a given string
+            # result_array = [res for res in result_array if res != Status.OK.name]
             if len(result_array) == 0:
-                print(result_status.name)
+                return AtResponse(status=result_status, response=result_array, wanted=[])
             else:
                 print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
-                return AtResponse(status=result_status, response=result_array, wanted_params={"wanted_param": "Value1"})
+                return AtResponse(status=result_status, response=result_array, wanted=[])
             # PARSE THE RESPONSE IF STATUS IS OK
-            return AtResponse(status=result_status, response=result_array, wanted_params={"wanted_param": "Value1"})
-        print(result_status.name)
+        return AtResponse(status=result_status, response=result_array, wanted=[])
 
     @staticmethod
-    def readIpAddr(result_status: Status, result_array: List[str]):
+    def pdpContextId(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
+        if result_status == Status.OK:
+            if len(result_array) == 0:
+                print(f"There is nothing in the response")
+            else:
+                print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+                wanted_params = []
+                for param in at_expected_response.wanted:
+                    response_row = result_array[param.response_row].replace(':', ',').split(',')
+                    res = Param(name=param.name, index=param.index, value=response_row[param.index])
+                    wanted_params.append(res)
+                return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
+            # PARSE THE RESPONSE IF STATUS IS OK
+        return AtResponse(status=result_status, response=result_array, wanted=[])
+
+    @staticmethod
+    def readIpAddr(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         if result_status == Status.OK:
             result_array = [res for res in result_array if res != Status.OK.name]
             # tu hardcoded odgovor
@@ -111,16 +131,16 @@ class Read:
         print(result_status.name)
 
     @staticmethod
-    def socketStatus(result_status: Status, result_array: List[str]):
+    def socketStatus(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         # Here comes hardcoded index of an answer
         return result_array
 
     @staticmethod
-    def ipAddress(result_status: Status, result_array: List[str]):
+    def ipAddress(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         # Here comes hardcoded index of an answer
         return result_array
 
     @staticmethod
-    def operatorSelection(result_status: Status, result_array: List[str]):
+    def operatorSelection(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         # Here comes hardcoded index of an answer
         return result_array

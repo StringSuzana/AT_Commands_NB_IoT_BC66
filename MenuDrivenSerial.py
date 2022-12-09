@@ -5,7 +5,7 @@ import time
 import string
 import serial as serial
 
-from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE
+from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, TEMP_AT_MAKE_CONNECTION
 from AtResponse import AtResponse
 from AtResponseReader import Read
 from Config import Server
@@ -30,6 +30,10 @@ class NbIoTSender:
         self.serverPort = Server.PORT
         self.protocol = Server.UDP
 
+    def sendAtCommand(self, command):
+        ser.write((command + '\r').encode('ASCII'))
+        time.sleep(1)
+
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
         # transform message into ...hex?
@@ -41,9 +45,12 @@ class NbIoTSender:
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
-    def sendAtCommand(self, command):
-        ser.write((command + '\r').encode('ASCII'))
-        time.sleep(1)
+    def establishConnection(self) -> str:
+        response = self.executeAtCommandSequence(TEMP_AT_MAKE_CONNECTION)
+        '''
+        don't use that execute loop, rather switch to checking responses and deciding what to execute next
+        '''
+        return response
 
     def getNbIotModuleInfo(self) -> str:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
@@ -60,6 +67,12 @@ class NbIoTSender:
             if at_response is not None:
                 resp = f'>>{"":>4}{",".join(at_response.response)}'
                 whole_response = whole_response + resp
+
+                if len(at_response.wanted) != 0:
+                    for param in at_response.wanted:
+                        wanted_param = F"WANTED PARAM: {param.name} : {param.value}"
+                        whole_response += wanted_param
+                        print(wanted_param)
         return whole_response
 
 
@@ -90,6 +103,8 @@ if __name__ == '__main__':
     answers = prompt(questions, style=MenuStyle.basic)
 
     print(answers)
+    if answers.get('nb_iot_main_menu') == '4':
+        Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
     if answers.get('nb_iot_main_menu') == '3':
         pass
         # sendMessageToServer(answers['message_text'])
