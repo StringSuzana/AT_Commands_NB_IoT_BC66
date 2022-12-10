@@ -1,6 +1,6 @@
 from PyInquirer import prompt
 from pyfiglet import Figlet
-from datetime import datetime
+from colorama import Fore
 import time
 import string
 import serial as serial
@@ -61,10 +61,12 @@ class NbIoTSender:
         whole_response = ''
         for i, at in enumerate(sequence):
             cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-            print(cmd_and_descr)
-            self.sendAtCommand(at.command)
             whole_response += cmd_and_descr
+            print(cmd_and_descr)
+
+            self.sendAtCommand(at.command)
             at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+
             if at_response is not None:
                 whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
                 whole_response += f'>>STATUS:{at_response.status}\n'
@@ -81,6 +83,7 @@ if __name__ == '__main__':
     SerialCommunication.open()
     custom_fig = Figlet(font='ogre')  # larry3d #ogre
     print(custom_fig.renderText('N b - I o T'))
+    print(f"{Fore.GREEN}")
     questions = [
         {
             'type': 'list',

@@ -7,7 +7,7 @@ from AtResponseReader import Read
 from ResponseStatus import Status
 
 '''
-Basic Setup
+Info
 '''
 at_read_ati = AtCommand(
     command=ATI,
@@ -33,6 +33,21 @@ at_read_imei = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
+at_read_power_supply_voltage = AtCommand(
+    command=AT_READ_POWER_SUPPLY_VOLTAGE,
+    description="This command queries the voltage value of power supply",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["+CBC:<bcs>,<bcl>,<voltage>", "OK"],
+            wanted=[Param(name="<bcs>"), Param(name="<bcl>"), Param(name="<voltage>"), ]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
+    ],
+    max_wait_for_response=1)
+'''
+Basic Setup
+'''
 at_write_full_phone_functionality = AtCommand(
     command=AT_WRITE_FULL_PHONE_FUNCTIONALITY,
     description="Select FULL functionality in the MT (Mobile Terminal).",
@@ -259,9 +274,17 @@ AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCR
                              AT_WRITE_TURN_OFF_PSM, AT_WRITE_CONNECTION_STATUS_URC, AT_WRITE_ENABLE_WAKEUP_INDICATION,
                              AT_WRITE_OPERATOR_SELECTION, AT_EXECUTE_EXTENDED_SIGNAL_QUALITY,
                              AT_READ_OPERATOR_SELECTION, AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE]
-AT_BASIC_INFO_SEQUENCE = [at_read_ati, at_read_operator_selection]
+AT_BASIC_INFO_SEQUENCE = [at_read_ati, at_read_imei, at_read_power_supply_voltage, at_read_operator_selection]
 AT_OPEN_SOCKET_SEQUENCE = []
 AT_SEND_UDP_MESSAGE_SEQUENCE = []
-TEMP_AT_MAKE_CONNECTION = [at_read_pdp_context_status, at_write_pdp_context_status_deactivate, at_read_pdp_context_status,
-                           at_write_pdp_context_status_activate,
-                           at_write_activate_pdn_ctx]
+
+TEMP_AT_MAKE_CONNECTION = [
+   # [
+        at_read_pdp_context_status,
+        at_write_pdp_context_status_deactivate,
+        at_read_pdp_context_status,
+        at_write_pdp_context_status_activate,
+        at_read_pdp_context_status,
+  #  ],
+    at_write_activate_pdn_ctx
+]
