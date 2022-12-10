@@ -106,25 +106,8 @@ class Read:
             # PARSE THE RESPONSE IF STATUS IS OK
         return AtResponse(status=result_status, response=result_array, wanted=[])
 
-    '''    
     @staticmethod
-        def pdpContextId(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
-            if result_status == Status.OK:
-                if len(result_array) == 0:
-                    print(f"There is nothing in the response")
-                else:
-                    print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
-                    wanted_params = []
-                    for param in at_expected_response.wanted:
-                        response_row = result_array[param.response_row].replace(':', ',').split(',')
-                        res = Param(name=param.name, index=param.index, value=response_row[param.index])
-                        wanted_params.append(res)
-                    return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
-                # PARSE THE RESPONSE IF STATUS IS OK
-            return AtResponse(status=result_status, response=result_array, wanted=[])
-    '''
-    @staticmethod
-    def wantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
+    def answerWithWantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         if (len(result_array) == 0) | (len(at_expected_response.wanted) == 0):
             print(f"There is nothing to read")
             return AtResponse(status=result_status, response=result_array, wanted=[])
