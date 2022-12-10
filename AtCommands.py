@@ -206,7 +206,7 @@ at_read_pdp_context_status = AtCommand(
     command=AT_READ_PDP_CONTEXT_STATE,
     description="Reads if Packet Data Protocol context is activated. If It is, it should be deactivated before setting PDN",
     long_description="",
-    read_response_method=Read.pdpContextId,
+    read_response_method=Read.wantedParams,
     expected_responses=[
         AtResponse(
             Status.OK, response=["+CGACT:<cid>,<state>", "OK"], wanted=[Param(name="<cid>"), Param(name="<state>")]),
