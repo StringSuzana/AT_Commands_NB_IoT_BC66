@@ -124,22 +124,24 @@ class Read:
 
     @staticmethod
     def wantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
-        if result_status == Status.OK:
-            if len(result_array) == 0:
-                print(f"There is nothing in the response")
-            else:
-                print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
-                wanted_params = []
-                for wanted in at_expected_response.wanted:
-                    row = wanted.response_row
-                    response_row = Read.getResponseRowFrom_Array(arr=result_array, row=row)
-                    expected_row = Read.getResponseRowFrom_Array(arr=at_expected_response.response, row=row)
-                    param_index = findIndex(arr=expected_row, element=wanted)
+        if (len(result_array) == 0) | (len(at_expected_response.wanted) == 0):
+            print(f"There is nothing to read")
+            return AtResponse(status=result_status, response=result_array, wanted=[])
+        else:
+            print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+            wanted_params = []
+
+            for wanted in at_expected_response.wanted:
+                row = wanted.response_row
+                response_row = Read.getResponseRowFrom_Array(arr=result_array, row=row)
+                expected_row = Read.getResponseRowFrom_Array(arr=at_expected_response.response, row=row)
+
+                param_index = findIndex(arr=expected_row, element=wanted)
+                if param_index != -1:
                     res = Param(name=wanted.name, value=response_row[param_index])
                     wanted_params.append(res)
-                return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
-            # PARSE THE RESPONSE IF STATUS IS OK
-        return AtResponse(status=result_status, response=result_array, wanted=[])
+
+            return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
 
     @staticmethod
     def getResponseRowFrom_Array(arr, row):
