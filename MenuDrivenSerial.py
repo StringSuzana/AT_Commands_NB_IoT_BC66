@@ -41,15 +41,16 @@ class NbIoTSender:
         pass
 
     def sendTestMessageToServer(self):
-        # get parameters from Nb Iot
+        """get parameters from Nb Iot"""
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
     def establishConnection(self) -> str:
+        """
+        Don't use that execute loop
+        rather switch to checking responses and deciding what to execute next
+        """
         response = self.executeAtCommandSequence(TEMP_AT_MAKE_CONNECTION)
-        '''
-        don't use that execute loop, rather switch to checking responses and deciding what to execute next
-        '''
         return response
 
     def getNbIotModuleInfo(self) -> str:
@@ -65,12 +66,12 @@ class NbIoTSender:
             whole_response += cmd_and_descr
             at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
             if at_response is not None:
-                resp = f'>>{"":>4}{",".join(at_response.response)}'
-                whole_response = whole_response + resp
+                whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
+                whole_response += f'>>STATUS:{at_response.status}\n'
 
                 if len(at_response.wanted) != 0:
                     for param in at_response.wanted:
-                        wanted_param = F"WANTED PARAM: {param.name} : {param.value}"
+                        wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
                         whole_response += wanted_param
                         print(wanted_param)
         return whole_response

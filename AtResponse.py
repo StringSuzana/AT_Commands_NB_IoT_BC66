@@ -9,7 +9,6 @@ from ResponseStatus import Status
 @dataclass
 class Param:
     name: str
-    index: int
     value: str = ""
     response_row = 0
 

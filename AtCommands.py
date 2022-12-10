@@ -17,11 +17,22 @@ at_read_ati = AtCommand(
     [
         AtResponse(
             Status.OK, response=["Quectel_Ltd", "Quectel_BC66NA", "Revision: BC66NBR01A01:<revision>", "OK"],
-            wanted=[Param(name="<revision>", index=1)], ),
+            wanted=[Param(name="<revision>")], ),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
-
+at_read_imei = AtCommand(
+    command=AT_READ_IMEI,
+    description="Read IMEI",
+    read_response_method=Read.wantedParams,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["+CGSN:<IMEI>", "OK"],
+            wanted=[Param(name="<IMEI>")], ),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
+    ],
+    max_wait_for_response=1)
 at_write_full_phone_functionality = AtCommand(
     command=AT_WRITE_FULL_PHONE_FUNCTIONALITY,
     description="Select FULL functionality in the MT (Mobile Terminal).",
@@ -116,8 +127,8 @@ Setup connection
     AT_READ_CONNECTION_STATUS = "AT+CSCON?"
     AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
     AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1'
-    
     AT_WRITE_ACTIVATE_PDN_CTX = 'AT+QGACT=1,1,"iot.ht.hr"'
+    
 AT_TEST_EXTENDED_SIGNAL_QUALITY = 'AT+CESQ=?'
 AT_READ_EPS_NETWORK_REGISTRATION_STATUS = 'AT+CEREG?'  # +CEREG: 0,1
 AT_READ_PDP_CTX = 'AT+CGDCONT?'  # Read pdp context info. RESPONSE: +CGDCONT: 1,"IP","iot.ht.hr","10.157.140.5",0,0,0,,,,,,0,,0
@@ -187,7 +198,10 @@ at_write_attach_to_packet_domain_service = AtCommand(
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=85)
-###############################################
+
+'''
+Enable PDP and connect to PDN sequence
+'''
 at_read_pdp_context_status = AtCommand(
     command=AT_READ_PDP_CONTEXT_STATE,
     description="Reads if Packet Data Protocol context is activated. If It is, it should be deactivated before setting PDN",
@@ -195,10 +209,10 @@ at_read_pdp_context_status = AtCommand(
     read_response_method=Read.pdpContextId,
     expected_responses=[
         AtResponse(
-            Status.OK, response=["+CGACT:<cid>,<state>", "OK"], wanted=[Param(name="<cid>", index=1), Param(name="<state>", index=2)]),
+            Status.OK, response=["+CGACT:<cid>,<state>", "OK"], wanted=[Param(name="<cid>"), Param(name="<state>")]),
         AtResponse(
             Status.OK, response=["+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "OK"],
-            wanted=[Param(name="<cid>", index=1), Param(name="<state>", index=2)]),
+            wanted=[Param(name="<cid>"), Param(name="<state>")]),
         AtResponse(Status.OK, response=["NO CARRIER"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=150)
@@ -206,7 +220,7 @@ at_read_pdp_context_status = AtCommand(
 at_write_pdp_context_status_deactivate = AtCommand(
     command="AT+CGACT=0,1",
     description="Deactivate PDN",
-    long_description="",
+    long_description="AT+CGACT=<state>,<cid> state=0=deactivate",
     read_response_method=Read.answer,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
@@ -216,7 +230,7 @@ at_write_pdp_context_status_deactivate = AtCommand(
 at_write_pdp_context_status_activate = AtCommand(
     command="AT+CGACT=1,1",
     description="Activate PDN",
-    long_description="",
+    long_description="AT+CGACT=<state>,<cid> state=1=activate",
     read_response_method=Read.answer,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
@@ -229,6 +243,7 @@ at_write_activate_pdn_ctx = AtCommand(
     long_description="AT+QGACT=1,1,'iot.ht.hr' command connects to specified context ",
     read_response_method=Read.answer,
     expected_responses=[
+        # this should not be possible because I will always deactivate PDP before activating a PDN context:
         # AtResponse(Status.OK, response=["+QGACT:<cid>,<type>,<result>,<activated_PDP_type>","OK"], wanted=[]),
         AtResponse(Status.OK, response=["+QGACT:<cid>", "OK", "+QGACT:<cid>,<type>,<result>,<activated_PDP_type>"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -247,5 +262,6 @@ AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY, AT_WRITE_OLD_SCR
 AT_BASIC_INFO_SEQUENCE = [at_read_ati, at_read_operator_selection]
 AT_OPEN_SOCKET_SEQUENCE = []
 AT_SEND_UDP_MESSAGE_SEQUENCE = []
-TEMP_AT_MAKE_CONNECTION = [at_read_pdp_context_status, at_write_pdp_context_status_deactivate,at_read_pdp_context_status, at_write_pdp_context_status_activate,
+TEMP_AT_MAKE_CONNECTION = [at_read_pdp_context_status, at_write_pdp_context_status_deactivate, at_read_pdp_context_status,
+                           at_write_pdp_context_status_activate,
                            at_write_activate_pdn_ctx]

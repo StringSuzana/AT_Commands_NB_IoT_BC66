@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import List
 
+from ArrayUtils import findIndex
 from AtCommand import AtCommand
 from AtResponse import AtResponse, Param
 from ResponseStatus import Status
@@ -92,6 +93,7 @@ class Read:
     Below are methods for referencing in At commands
     in read_response_method property
     '''
+
     @staticmethod
     def answer(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         if result_status == Status.OK:
@@ -121,26 +123,25 @@ class Read:
         return AtResponse(status=result_status, response=result_array, wanted=[])
 
     @staticmethod
-    def readIpAddr(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
+    def wantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
         if result_status == Status.OK:
-            result_array = [res for res in result_array if res != Status.OK.name]
-            # tu hardcoded odgovor
-            print(result_array)
+            if len(result_array) == 0:
+                print(f"There is nothing in the response")
+            else:
+                print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+                wanted_params = []
+                for wanted in at_expected_response.wanted:
+                    row = wanted.response_row
+                    response_row = Read.getResponseRowFrom_Array(arr=result_array, row=row)
+                    expected_row = Read.getResponseRowFrom_Array(arr=at_expected_response.response, row=row)
+                    param_index = findIndex(arr=expected_row, element=wanted)
+                    res = Param(name=wanted.name, value=response_row[param_index])
+                    wanted_params.append(res)
+                return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
             # PARSE THE RESPONSE IF STATUS IS OK
-            return result_array
-        print(result_status.name)
+        return AtResponse(status=result_status, response=result_array, wanted=[])
 
     @staticmethod
-    def socketStatus(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
-        # Here comes hardcoded index of an answer
-        return result_array
-
-    @staticmethod
-    def ipAddress(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
-        # Here comes hardcoded index of an answer
-        return result_array
-
-    @staticmethod
-    def operatorSelection(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
-        # Here comes hardcoded index of an answer
-        return result_array
+    def getResponseRowFrom_Array(arr, row):
+        response_row = arr[row].replace(':', ',').split(',')
+        return response_row
