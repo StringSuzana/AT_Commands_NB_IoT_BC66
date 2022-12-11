@@ -35,7 +35,7 @@ class Read:
             out += serial.read(1).decode('ASCII')
 
         if out != '':
-            print(">> " + out)
+            # print(">> " + out)
             return out
         else:
             return ''

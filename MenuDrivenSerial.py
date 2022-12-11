@@ -75,7 +75,7 @@ class NbIoTSender:
                     for param in at_response.wanted:
                         wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
                         whole_response += wanted_param
-                        print(wanted_param)
+                        print(wanted_param.strip('\n'))
         return whole_response
 
 
@@ -83,7 +83,6 @@ if __name__ == '__main__':
     SerialCommunication.open()
     custom_fig = Figlet(font='ogre')  # larry3d #ogre
     print(custom_fig.renderText('N b - I o T'))
-    print(f"{Fore.GREEN}")
     questions = [
         {
             'type': 'list',
