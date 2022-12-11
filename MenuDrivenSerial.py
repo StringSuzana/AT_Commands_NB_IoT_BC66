@@ -5,6 +5,7 @@ import time
 import string
 import serial as serial
 
+from AtCommand import AtCommand
 from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, TEMP_AT_MAKE_CONNECTION
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -50,23 +51,10 @@ class NbIoTSender:
         Don't use that execute loop
         rather switch to checking responses and deciding what to execute next
         """
-        response = self.executeAtCommandSequence(TEMP_AT_MAKE_CONNECTION)
-        return response
-
-    def getNbIotModuleInfo(self) -> str:
-        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
-        return response
-
-    def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
-        for i, at in enumerate(sequence):
-            cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-            whole_response += cmd_and_descr
-            print(cmd_and_descr)
-
-            self.sendAtCommand(at.command)
-            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
-
+        for at_command in TEMP_AT_MAKE_CONNECTION:
+            print('AAAAAA')
+            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at_command)
             if at_response is not None:
                 whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
                 whole_response += f'>>STATUS:{at_response.status}\n'
@@ -76,6 +64,42 @@ class NbIoTSender:
                         wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
                         whole_response += wanted_param
                         print(wanted_param.strip('\n'))
+        return whole_response
+
+    def getNbIotModuleInfo(self) -> str:
+        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
+        return response
+
+    def executeAtCommand(self, at: AtCommand):
+        self.sendAtCommand(at.command)
+        at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+        return at_response
+
+    def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
+        whole_response = ''
+        cmd_and_descr = f'\n{(i + 1):<3} | {at_command.command:.<20} |>>| {at_command.description}\n'
+        whole_response += cmd_and_descr
+
+        if at_response is not None:
+            whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
+            whole_response += f'>>STATUS:{at_response.status}\n'
+
+            if len(at_response.wanted) != 0:
+                for param in at_response.wanted:
+                    wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
+                    whole_response += wanted_param
+        print(whole_response)
+        return whole_response
+
+    def executeAtCommandSequence(self, sequence) -> string:
+        whole_response = ''
+        for i, at in enumerate(sequence):
+            # cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
+            self.sendAtCommand(at.command)
+            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+
+            text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
+            whole_response += text_response
         return whole_response
 
 
@@ -109,10 +133,10 @@ if __name__ == '__main__':
     if answers.get('nb_iot_main_menu') == '4':
         Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
     if answers.get('nb_iot_main_menu') == '3':
-        pass
         # sendMessageToServer(answers['message_text'])
-    elif answers.get('nb_iot_main_menu') == '2':
         pass
+    elif answers.get('nb_iot_main_menu') == '2':
         # sendTestMessageToServer()
+        pass
     elif answers.get('nb_iot_main_menu') == '1':
         Write.toUniversalFile("".join(NbIoTSender().getNbIotModuleInfo()))

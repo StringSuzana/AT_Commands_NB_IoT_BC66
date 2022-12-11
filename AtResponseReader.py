@@ -17,7 +17,7 @@ class Read:
     at_status = Status.WAITING
     at_expected_response: AtResponse = None
 
-    def atResponse(self, serial, at_command_obj: AtCommand):
+    def atResponse(self, serial, at_command_obj: AtCommand) -> AtResponse:
         serial_msg = Read.fromSerial(serial)
         wait_intervals = at_command_obj.max_wait_for_response
 
@@ -95,7 +95,7 @@ class Read:
     '''
 
     @staticmethod
-    def answer(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
+    def answer(result_status: Status, result_array: List[str], at_expected_response: AtResponse) -> AtResponse:
         if result_status == Status.OK:
             # result_array = [res for res in result_array if res != Status.OK.name]
             if len(result_array) == 0:
@@ -107,7 +107,7 @@ class Read:
         return AtResponse(status=result_status, response=result_array, wanted=[])
 
     @staticmethod
-    def answerWithWantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse):
+    def answerWithWantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse) -> AtResponse:
         if (len(result_array) == 0) | (len(at_expected_response.wanted) == 0):
             print(f"There is nothing to read")
             return AtResponse(status=result_status, response=result_array, wanted=[])

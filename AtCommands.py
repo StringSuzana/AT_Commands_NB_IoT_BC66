@@ -279,12 +279,13 @@ AT_OPEN_SOCKET_SEQUENCE = []
 AT_SEND_UDP_MESSAGE_SEQUENCE = []
 
 TEMP_AT_MAKE_CONNECTION = [
-   # [
+
         at_read_pdp_context_status,
         at_write_pdp_context_status_deactivate,
         at_read_pdp_context_status,
         at_write_pdp_context_status_activate,
         at_read_pdp_context_status,
-  #  ],
-    at_write_activate_pdn_ctx
+
+        at_write_activate_pdn_ctx
+
 ]
