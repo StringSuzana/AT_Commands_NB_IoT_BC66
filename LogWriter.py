@@ -9,7 +9,8 @@ class Write:
 
     @staticmethod
     def toSeparateFile(text):
-        with open(file=f'logs/at_log_{datetime.now().strftime("d_%m_%Y_%Hh%Mm%Ss")}.txt', mode='w',
-                  encoding='ASCII') as f:
-            text = text.replace('\r\n', '\r')
+        with open(
+                file=f'logs/at_log_{datetime.now().strftime("Y_%m_%d_%Hh%Mm%Ss")}.txt', mode='w',
+                encoding='ASCII') as f:
+            # text = text.replace('\r\n', '\r')
             f.write(text)

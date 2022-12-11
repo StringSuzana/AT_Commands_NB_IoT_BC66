@@ -89,10 +89,7 @@ class NbIoTSender:
     def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
         for i, at in enumerate(sequence):
-            # cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-            Sender().sendAtCommand(ser=ser, command=at.command)
-            at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
-
+            at_response: AtResponse = self.executeAtCommand(at)
             text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
             whole_response += text_response
         return whole_response
