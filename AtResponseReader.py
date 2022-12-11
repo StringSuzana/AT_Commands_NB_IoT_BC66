@@ -17,7 +17,7 @@ class Read:
     at_status = Status.WAITING
     at_expected_response: AtResponse = None
 
-    def atResponse(self, serial, at_command_obj: AtCommand) -> AtResponse:
+    def readAtResponse(self, serial, at_command_obj: AtCommand) -> AtResponse:
         serial_msg = Read.fromSerial(serial)
         wait_intervals = at_command_obj.max_wait_for_response
 

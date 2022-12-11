@@ -1,7 +1,5 @@
 from PyInquirer import prompt
 from pyfiglet import Figlet
-from colorama import Fore
-import time
 import string
 import serial as serial
 
@@ -12,6 +10,7 @@ from AtResponseReader import Read
 from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
+from Sender import Sender
 
 
 class SerialCommunication:
@@ -30,10 +29,6 @@ class NbIoTSender:
         self.serverIpAddress = Server.IP_ADDR
         self.serverPort = Server.PORT
         self.protocol = Server.UDP
-
-    def sendAtCommand(self, command):
-        ser.write((command + '\r').encode('ASCII'))
-        time.sleep(1)
 
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
@@ -54,7 +49,7 @@ class NbIoTSender:
         whole_response = ''
         for at_command in TEMP_AT_MAKE_CONNECTION:
             print('AAAAAA')
-            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at_command)
+            at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at_command)
             if at_response is not None:
                 whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
                 whole_response += f'>>STATUS:{at_response.status}\n'
@@ -71,8 +66,8 @@ class NbIoTSender:
         return response
 
     def executeAtCommand(self, at: AtCommand):
-        self.sendAtCommand(at.command)
-        at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+        Sender().sendAtCommand(ser=ser, command=at.command)
+        at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
         return at_response
 
     def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
@@ -95,8 +90,8 @@ class NbIoTSender:
         whole_response = ''
         for i, at in enumerate(sequence):
             # cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-            self.sendAtCommand(at.command)
-            at_response: AtResponse = Read().atResponse(serial=ser, at_command_obj=at)
+            Sender().sendAtCommand(ser=ser, command=at.command)
+            at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
 
             text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
             whole_response += text_response
