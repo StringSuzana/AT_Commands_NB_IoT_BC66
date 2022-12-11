@@ -227,7 +227,10 @@ at_read_pdp_context_status = AtCommand(
             Status.OK, response=["+CGACT:<cid>,<state>", "OK"], wanted=[Param(name="<cid>"), Param(name="<state>")]),
         AtResponse(
             Status.OK, response=["+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "OK"],
-            wanted=[Param(name="<cid>"), Param(name="<state>")]),
+            wanted=[Param(name="<cid>", response_row=0),
+                    Param(name="<state>", response_row=0),
+                    Param(name="<cid>", response_row=1),
+                    Param(name="<state>", response_row=1)]),
         AtResponse(Status.OK, response=["NO CARRIER"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=150)
@@ -280,12 +283,12 @@ AT_SEND_UDP_MESSAGE_SEQUENCE = []
 
 TEMP_AT_MAKE_CONNECTION = [
 
-        at_read_pdp_context_status,
-        at_write_pdp_context_status_deactivate,
-        at_read_pdp_context_status,
-        at_write_pdp_context_status_activate,
-        at_read_pdp_context_status,
+    at_read_pdp_context_status,
+    at_write_pdp_context_status_deactivate,
+    at_read_pdp_context_status,
+    at_write_pdp_context_status_activate,
+    at_read_pdp_context_status,
 
-        at_write_activate_pdn_ctx
+    at_write_activate_pdn_ctx
 
 ]

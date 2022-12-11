@@ -10,7 +10,7 @@ from ResponseStatus import Status
 class Param:
     name: str
     value: str = ""
-    response_row = 0
+    response_row: int = 0
 
 
 @dataclass

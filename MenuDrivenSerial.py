@@ -4,7 +4,7 @@ import string
 import serial as serial
 
 from AtCommand import AtCommand
-from AtCommands import AT_BASIC_INFO_SEQUENCE, AT_OPEN_SOCKET_SEQUENCE, AT_SEND_UDP_MESSAGE_SEQUENCE, TEMP_AT_MAKE_CONNECTION
+from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
 from Config import Server
@@ -42,23 +42,26 @@ class NbIoTSender:
         self.sendMessageToServer(basic_info)
 
     def establishConnection(self) -> str:
-        """
-        Don't use that execute loop
-        rather switch to checking responses and deciding what to execute next
-        """
         whole_response = ''
-        for at_command in TEMP_AT_MAKE_CONNECTION:
-            print('AAAAAA')
-            at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at_command)
-            if at_response is not None:
-                whole_response += f'>>{"RESPONSE:":>4}{",".join(at_response.response)}\n'
-                whole_response += f'>>STATUS:{at_response.status}\n'
+        """
+        at_read_pdp_context_status,
+        at_write_pdp_context_status_deactivate,
+        at_read_pdp_context_status,
+        at_write_pdp_context_status_activate,
+        at_read_pdp_context_status,
 
-                if len(at_response.wanted) != 0:
-                    for param in at_response.wanted:
-                        wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
-                        whole_response += wanted_param
-                        print(wanted_param.strip('\n'))
+        at_write_activate_pdn_ctx
+        """
+        at_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status)
+        text_response = self.makeTextFromResponse(at_command=at_read_pdp_context_status, at_response=at_response)
+        whole_response += text_response
+
+        if len(at_response.wanted) != 0:
+            cid = next(filter(lambda p: p.name == "<cid>", at_response.wanted))
+            state = next(filter(lambda p: p.name == "<state>", at_response.wanted))
+            pass
+
+
         return whole_response
 
     def getNbIotModuleInfo(self) -> str:
