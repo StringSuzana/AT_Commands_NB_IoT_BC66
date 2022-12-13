@@ -21,6 +21,7 @@ class SerialCommunication:
         while not ser.isOpen():
             print('.')
             continue
+        print(Read.fromSerial(serial=ser))
         return ser.isOpen()
 
 
@@ -34,6 +35,10 @@ class NbIoTSender:
     def resetWholeResponse(self):
         self.wholeResponse = ''
 
+    def getNbIotModuleInfo(self) -> str:
+        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
+        return response
+
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
         # transform message into ...hex?
@@ -45,13 +50,23 @@ class NbIoTSender:
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
+    def initForConnection(self)->str:
+        """
+        Initialize operator and activate
+        """
+        """
+        + AT_WRITE_CONNECTION_STATUS_URC = 'AT+CSCON=1',
+        + AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
+            - AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
+        + AT_READ_CONNECTION_STATUS = "AT+CSCON?" (should be +CSCON: 1,1)
+        + AT_READ_OPERATOR_SELECTION = 'AT+COPS?' (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
+        + AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1' (The state of PDP context activation, should be +CGATT: 1)
+
+        """
+        pass
     def establishConnection(self) -> str:
         """
-        todo: ADD THIS?
-        TODO:AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
-        TODO:AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
-        TODO:AT_READ_CONNECTION_STATUS = "AT+CSCON?"
-        TODO:AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
+
 
         | at_read_pdp_context_status,
         |---->>if status is active, deactivate:
@@ -61,7 +76,6 @@ class NbIoTSender:
         |-------- at_write_pdp_context_status_activate,
         |-------- at_read_pdp_context_status,
         |-------- at_write_activate_pdn_ctx
-        TODO: ADD THIS? AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1'
         """
         cid_in_active_state = "1"
 
@@ -93,7 +107,9 @@ class NbIoTSender:
         at_write_enable_wakeup_indication,
         at_read_is_wakeup_indication_enabled,
 
-            AT_RESET_MODULE
+        CALL FOR METHOD initForConnection
+        AT_RESET_MODULE
+
         """
         self.resetWholeResponse()
         self.executeAtCommandSequence(
@@ -101,7 +117,6 @@ class NbIoTSender:
                 at_write_full_phone_functionality,
                 at_write_eps_status_codes,
                 at_write_turn_off_psm,
-                at_write_connection_status_enable_urc,
                 at_write_enable_wakeup_indication,
                 at_read_is_wakeup_indication_enabled
             ])
@@ -115,9 +130,8 @@ class NbIoTSender:
 
         pass
 
-    def getNbIotModuleInfo(self) -> str:
-        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
-        return response
+    def reset(self):
+        Sender().sendAtCommand(ser=ser, command=at_reset.command)
 
     def executeAtCommand(self, at: AtCommand, i: int = 0):
         Sender().sendAtCommand(ser=ser, command=at.command)
@@ -163,7 +177,8 @@ if __name__ == '__main__':
                         '2. Send basic test message to server',
                         '3. Send custom message to server',
                         '4. Do initial setup. (If device is restarted)',
-                        '5. Do connection sequence to server'
+                        '5. Do connection sequence to server',
+                        '6. Reset device'
                         ],
             'filter': lambda val: val[0:1:]  # I want just the number
         },
@@ -178,6 +193,8 @@ if __name__ == '__main__':
     answers = prompt(questions, style=MenuStyle.basic)
 
     print(answers)
+    if answers.get('nb_iot_main_menu') == '6':
+        NbIoTSender().reset()
     if answers.get('nb_iot_main_menu') == '5':
         Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
     elif answers.get('nb_iot_main_menu') == '4':

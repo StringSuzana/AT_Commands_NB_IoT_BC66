@@ -211,6 +211,15 @@ at_write_attach_to_packet_domain_service = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=85)
 
+at_reset = AtCommand(
+    command='AT+QRST=1',
+    description="Reset the device",
+    read_response_method=Read.answer,
+    expected_responses=[
+        AtResponse(Status.OK, response=["OK"], wanted=[]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
 '''
 Enable PDP and connect to PDN sequence
 '''
