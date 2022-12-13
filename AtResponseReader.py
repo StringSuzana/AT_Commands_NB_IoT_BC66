@@ -108,8 +108,11 @@ class Read:
 
     @staticmethod
     def answerWithWantedParams(result_status: Status, result_array: List[str], at_expected_response: AtResponse) -> AtResponse:
-        if (len(result_array) == 0) | (len(at_expected_response.wanted) == 0):
+        if len(result_array) == 0:
             print(f"There is nothing to read")
+            return AtResponse(status=result_status, response=result_array, wanted=[])
+        elif len(at_expected_response.wanted) == 0:
+            print(f"There is no wanted parameters")
             return AtResponse(status=result_status, response=result_array, wanted=[])
         else:
             print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")

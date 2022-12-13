@@ -14,3 +14,7 @@ class AtCommand:
     read_response_method: ()  # read content of response message
     long_description: str = ""
     max_wait_for_response: int = 1  # [s]
+
+    def replaceParamInCommand(self, param: str, value: str):
+        self.command = self.command.replace(param.strip(), value.strip())
+        return self

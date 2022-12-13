@@ -219,7 +219,7 @@ Enable PDP and connect to PDN sequence
 '''
 at_read_pdp_context_status = AtCommand(
     command=AT_READ_PDP_CONTEXT_STATE,
-    description="Reads if Packet Data Protocol context is activated. If It is, it should be deactivated before setting PDN",
+    description="Reads if (PDP) Packet Data Protocol context is activated. If It is, it should be deactivated before setting PDN",
     long_description="",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
@@ -236,7 +236,7 @@ at_read_pdp_context_status = AtCommand(
     max_wait_for_response=150)
 
 at_write_pdp_context_status_deactivate = AtCommand(
-    command="AT+CGACT=0,1",
+    command="AT+CGACT=0,<cid>",
     description="Deactivate PDN",
     long_description="AT+CGACT=<state>,<cid> state=0=deactivate",
     read_response_method=Read.answer,
@@ -246,7 +246,7 @@ at_write_pdp_context_status_deactivate = AtCommand(
     max_wait_for_response=150)
 
 at_write_pdp_context_status_activate = AtCommand(
-    command="AT+CGACT=1,1",
+    command="AT+CGACT=1,<cid>",
     description="Activate PDN",
     long_description="AT+CGACT=<state>,<cid> state=1=activate",
     read_response_method=Read.answer,
@@ -258,12 +258,18 @@ at_write_pdp_context_status_activate = AtCommand(
 at_write_activate_pdn_ctx = AtCommand(
     command=AT_WRITE_ACTIVATE_PDN_CTX,
     description="AT+QGACT command activates a specified PDN context",
-    long_description="AT+QGACT=1,1,'iot.ht.hr' command connects to specified context ",
-    read_response_method=Read.answer,
+    long_description="AT+QGACT=1,1,'iot.ht.hr' command connects to ip. "
+                     "AT+QGACT=<op>,<PDP_type>,<APN>  is for activating"
+                     "AT+QGACT=<op>,<cid>             is for deactivating",
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         # this should not be possible because I will always deactivate PDP before activating a PDN context:
         # AtResponse(Status.OK, response=["+QGACT:<cid>,<type>,<result>,<activated_PDP_type>","OK"], wanted=[]),
-        AtResponse(Status.OK, response=["+QGACT:<cid>", "OK", "+QGACT:<cid>,<type>,<result>,<activated_PDP_type>"], wanted=[]),
+        AtResponse(
+            Status.OK, response=["+QGACT:<cid>", "OK", "+QGACT:<cid>,<type>,<result>,<activated_PDP_type>"],
+            wanted=[Param(name="<cid>", response_row=1),
+                    Param(name="<result>", response_row=1),
+                    Param(name="<activated_PDP_type>", response_row=1)]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 

@@ -29,6 +29,7 @@ class NbIoTSender:
         self.serverIpAddress = Server.IP_ADDR
         self.serverPort = Server.PORT
         self.protocol = Server.UDP
+        self.wholeResponse = ''
 
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
@@ -42,36 +43,49 @@ class NbIoTSender:
         self.sendMessageToServer(basic_info)
 
     def establishConnection(self) -> str:
-        whole_response = ''
         """
-        at_read_pdp_context_status,
-        at_write_pdp_context_status_deactivate,
-        at_read_pdp_context_status,
-        at_write_pdp_context_status_activate,
-        at_read_pdp_context_status,
-
-        at_write_activate_pdn_ctx
+        | at_read_pdp_context_status,
+        |---->>if status is active, deactivate:
+        |-------- at_write_pdp_context_status_deactivate,
+        |-------- at_read_pdp_context_status,
+        |---->>else:
+        |-------- at_write_pdp_context_status_activate,
+        |-------- at_read_pdp_context_status,
+        |-------- at_write_activate_pdn_ctx
         """
-        at_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status)
-        text_response = self.makeTextFromResponse(at_command=at_read_pdp_context_status, at_response=at_response)
-        whole_response += text_response
+        cid_in_active_state = "1"
 
-        if len(at_response.wanted) != 0:
-            cid = next(filter(lambda p: p.name == "<cid>", at_response.wanted))
-            state = next(filter(lambda p: p.name == "<state>", at_response.wanted))
-            pass
+        self.resetWholeResponse()
+        pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status, i=0)
 
+        if len(pdp_ctx_response.wanted) != 0:
+            cid = next(filter(lambda p: p.name == "<cid>", pdp_ctx_response.wanted))
+            state = next(filter(lambda p: p.name == "<state>", pdp_ctx_response.wanted))
+            all_cid = [c_id for c_id in pdp_ctx_response.wanted if cid.value == "<cid>"]
+            if state.value == cid_in_active_state:
+                self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", cid.value), i=1)
+                self.executeAtCommand(at_read_pdp_context_status, i=2)
 
-        return whole_response
+            self.executeAtCommand(at_write_pdp_context_status_activate.replaceParamInCommand("<cid>", cid.value), i=3)
+            self.executeAtCommand(at_read_pdp_context_status, i=4)
+            activate_pdn_context_result = self.executeAtCommand(at_write_activate_pdn_ctx, i=5)
+            if activate_pdn_context_result.status == Status.ERROR:
+                print("Try connecting again")
+
+        return self.wholeResponse
+
 
     def getNbIotModuleInfo(self) -> str:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
 
-    def executeAtCommand(self, at: AtCommand):
+
+    def executeAtCommand(self, at: AtCommand, i: int = 0):
         Sender().sendAtCommand(ser=ser, command=at.command)
         at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
+        self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
         return at_response
+
 
     def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
         whole_response = ''
@@ -89,6 +103,7 @@ class NbIoTSender:
         print(whole_response)
         return whole_response
 
+
     def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
         for i, at in enumerate(sequence):
@@ -96,6 +111,10 @@ class NbIoTSender:
             text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
             whole_response += text_response
         return whole_response
+
+
+    def resetWholeResponse(self):
+        self.wholeResponse = ''
 
 
 if __name__ == '__main__':
