@@ -50,20 +50,21 @@ class NbIoTSender:
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
-    def initForConnection(self)->str:
+    def initForConnection(self) -> str:
         """
         Initialize operator and activate
         """
-        """
-        + AT_WRITE_CONNECTION_STATUS_URC = 'AT+CSCON=1',
-        + AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
+        '''
+        +at_write_connection_status_enable_urc | AT_WRITE_CONNECTION_STATUS_URC = 'AT+CSCON=1',
+        +at_write_operator_selection | AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
             - AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
-        + AT_READ_CONNECTION_STATUS = "AT+CSCON?" (should be +CSCON: 1,1)
-        + AT_READ_OPERATOR_SELECTION = 'AT+COPS?' (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
-        + AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1' (The state of PDP context activation, should be +CGATT: 1)
+        +at_read_connection_status | AT_READ_CONNECTION_STATUS = "AT+CSCON?" (should be +CSCON: 1,1)
+        +at_read_operator_selection | AT_READ_OPERATOR_SELECTION = 'AT+COPS?' (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
+        +at_write_attach_to_packet_domain_service | AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1' (The state of PDP context activation, should be +CGATT: 1)
+        '''
 
-        """
         pass
+
     def establishConnection(self) -> str:
         """
 
