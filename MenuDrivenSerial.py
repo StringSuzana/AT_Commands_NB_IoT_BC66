@@ -44,6 +44,12 @@ class NbIoTSender:
 
     def establishConnection(self) -> str:
         """
+        todo: ADD THIS?
+        TODO:AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
+        TODO:AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
+        TODO:AT_READ_CONNECTION_STATUS = "AT+CSCON?"
+        TODO:AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
+
         | at_read_pdp_context_status,
         |---->>if status is active, deactivate:
         |-------- at_write_pdp_context_status_deactivate,
@@ -52,6 +58,7 @@ class NbIoTSender:
         |-------- at_write_pdp_context_status_activate,
         |-------- at_read_pdp_context_status,
         |-------- at_write_activate_pdn_ctx
+        TODO: ADD THIS? AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1'
         """
         cid_in_active_state = "1"
 
@@ -74,18 +81,39 @@ class NbIoTSender:
 
         return self.wholeResponse
 
+    def doInitialSetup(self) -> str:
+        """
+        at_write_full_phone_functionality
+        at_write_old_scrambling_algorithm
+        at_write_eps_status_codes (can be saved to device)
+
+        at_write_turn_off_psm
+
+        at_write_connection_status_enable_urc
+        at_write_enable_wakeup_indication
+        at_read_is_wakeup_indication_enabled
+
+AT_RESET_MODULE
+         :return:
+        """
+        pass
+
+    def readIpAddress(self) -> str:
+        # TODO
+        AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
+        AT_READ_UE_IP_ADDRESS = 'AT+QIPADDR'  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
+
+        pass
 
     def getNbIotModuleInfo(self) -> str:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
-
 
     def executeAtCommand(self, at: AtCommand, i: int = 0):
         Sender().sendAtCommand(ser=ser, command=at.command)
         at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
         self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
         return at_response
-
 
     def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
         whole_response = ''
@@ -103,7 +131,6 @@ class NbIoTSender:
         print(whole_response)
         return whole_response
 
-
     def executeAtCommandSequence(self, sequence) -> string:
         whole_response = ''
         for i, at in enumerate(sequence):
@@ -111,7 +138,6 @@ class NbIoTSender:
             text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
             whole_response += text_response
         return whole_response
-
 
     def resetWholeResponse(self):
         self.wholeResponse = ''
