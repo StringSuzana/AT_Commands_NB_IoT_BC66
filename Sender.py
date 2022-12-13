@@ -8,4 +8,5 @@ import serial as serial
 class Sender:
     def sendAtCommand(self, ser: serial, command):
         ser.write((command + '\r').encode('ASCII'))
+
         time.sleep(1)

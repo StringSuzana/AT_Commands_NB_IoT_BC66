@@ -50,7 +50,7 @@ Basic Setup
 '''
 at_write_full_phone_functionality = AtCommand(
     command=AT_WRITE_FULL_PHONE_FUNCTIONALITY,
-    description="Select FULL functionality in the MT (Mobile Terminal).",
+    description="AT+CFUN=1 Select FULL functionality in the MT (Mobile Terminal).",
     long_description=
     "This Write Command selects the level of functionality in the MT. "
     "Level Full_functionality (1) is where the highest level of power is drawn. "
@@ -65,10 +65,11 @@ at_write_full_phone_functionality = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=85)
-
+'''
+This is in old manual.
 at_write_old_scrambling_algorithm = AtCommand(
     command=AT_WRITE_OLD_SCRAMBLING_ALGORITHM,
-    description="Select old scrambling code.",
+    description="AT+QSPCHSC=1 Select old scrambling code.",
     long_description="Used for selecting new or old scrambling code. "
                      "This is because code has been updated by 3GPPP,"
                      " and UE needs to select correct code for network.",
@@ -78,19 +79,21 @@ at_write_old_scrambling_algorithm = AtCommand(
         AtResponse(Status.OK, response=["+QSPCHSC: (list of supported <mode>s)", "OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
-    max_wait_for_response=1)
-
+    max_wait_for_response=5)
+'''
 at_write_eps_status_codes = AtCommand(
     command=AT_WRITE_EPS_STATUS_CODES,
     description="Write URC for EPS Network Registration Status.",
     long_description="This Write Command configures the different unsolicited result codes for "
                      "EPS Network Registration Status.",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(
             Status.OK, response=[
                 "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
                 "OK"], wanted=[]),
+        AtResponse(
+            Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 
@@ -99,7 +102,7 @@ at_write_turn_off_psm = AtCommand(
     long_description="This Write Command controls the setting of the UE's power saving mode (PSM) parameters."
                      "It controls whether the UE wants to apply PSM or not, as well as the"
                      " requested extended periodic TAU value in E-UTRAN and the requested Active Time value.",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -121,7 +124,7 @@ at_write_connection_status_enable_urc = AtCommand(
 at_write_enable_wakeup_indication = AtCommand(
     command=AT_WRITE_ENABLE_WAKEUP_INDICATION,
     description="Enable Wakeup indication",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -130,7 +133,7 @@ at_write_enable_wakeup_indication = AtCommand(
 at_read_is_wakeup_indication_enabled = AtCommand(
     command=AT_READ_IS_WAKEUP_INDICATION_ENABLED,
     description="Read if wakeup indication is enabled",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["+QATWAKEUP: <enable>", "OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -143,9 +146,6 @@ Setup connection
     AT_READ_OPERATOR_SELECTION = 'AT+COPS?'
     --- MAYBE REMOVE: AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1'
 
-    
-AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
-AT_READ_UE_IP_ADDRESS = 'AT+QIPADDR'  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
 '''
 at_write_operator_selection = AtCommand(
     command=AT_WRITE_OPERATOR_SELECTION,
@@ -179,7 +179,7 @@ at_read_connection_status = AtCommand(
                      "It returns an indication of the current state. TA, or Terminal Adapter, is a term used to refer to a device "
                      "that connects a mobile terminal (MT) to the radio access network (RAN), allowing the MT to communicate with "
                      "the network and other devices.",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["+CSCON:<n>,<mode>", "OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -189,7 +189,7 @@ at_read_operator_selection = AtCommand(
     command=AT_READ_OPERATOR_SELECTION,
     description="Read selected operator.",
     long_description="AT+COPS?",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=
     [
         AtResponse(Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"], wanted=[]),
@@ -205,7 +205,7 @@ at_write_attach_to_packet_domain_service = AtCommand(
                      "the command will be ignored and the OK response will still be returned. If the requested state cannot be achieved,"
                      " an ERROR will be returned. Any active PDP contexts will be automatically deactivated when the attachment "
                      "state changes to detached. This Read Command returns the current packet domain service state. ",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -236,7 +236,7 @@ at_write_pdp_context_status_deactivate = AtCommand(
     command="AT+CGACT=0,<cid>",
     description="Deactivate PDN",
     long_description="AT+CGACT=<state>,<cid> state=0=deactivate",
-    read_response_method=Read.answer,
+    read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],

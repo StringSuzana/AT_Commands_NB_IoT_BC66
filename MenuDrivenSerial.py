@@ -31,6 +31,9 @@ class NbIoTSender:
         self.protocol = Server.UDP
         self.wholeResponse = ''
 
+    def resetWholeResponse(self):
+        self.wholeResponse = ''
+
     def sendMessageToServer(self, message_text):
         self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
         # transform message into ...hex?
@@ -83,20 +86,27 @@ class NbIoTSender:
 
     def doInitialSetup(self) -> str:
         """
-        at_write_full_phone_functionality
-        at_write_old_scrambling_algorithm
-        at_write_eps_status_codes (can be saved to device)
+        at_write_full_phone_functionality,
+        at_write_eps_status_codes (can be saved to device),
+                            at_write_turn_off_psm,
+        at_write_connection_status_enable_urc,
+        at_write_enable_wakeup_indication,
+        at_read_is_wakeup_indication_enabled,
 
-        at_write_turn_off_psm
-
-        at_write_connection_status_enable_urc
-        at_write_enable_wakeup_indication
-        at_read_is_wakeup_indication_enabled
-
-AT_RESET_MODULE
-         :return:
+            AT_RESET_MODULE
         """
-        pass
+        self.resetWholeResponse()
+        self.executeAtCommandSequence(
+            [
+                at_write_full_phone_functionality,
+                at_write_eps_status_codes,
+                at_write_turn_off_psm,
+                at_write_connection_status_enable_urc,
+                at_write_enable_wakeup_indication,
+                at_read_is_wakeup_indication_enabled
+            ])
+
+        return self.wholeResponse
 
     def readIpAddress(self) -> str:
         # TODO
@@ -115,6 +125,14 @@ AT_RESET_MODULE
         self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
         return at_response
 
+    def executeAtCommandSequence(self, sequence) -> string:
+        whole_response = ''
+        for i, at in enumerate(sequence):
+            at_response: AtResponse = self.executeAtCommand(at)
+            # text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
+            # whole_response += text_response
+        return whole_response
+
     def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
         whole_response = ''
         cmd_and_descr = f'\n{(i + 1):<3} | {at_command.command:.<20} |>>| {at_command.description}\n'
@@ -131,17 +149,6 @@ AT_RESET_MODULE
         print(whole_response)
         return whole_response
 
-    def executeAtCommandSequence(self, sequence) -> string:
-        whole_response = ''
-        for i, at in enumerate(sequence):
-            at_response: AtResponse = self.executeAtCommand(at)
-            text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
-            whole_response += text_response
-        return whole_response
-
-    def resetWholeResponse(self):
-        self.wholeResponse = ''
-
 
 if __name__ == '__main__':
     SerialCommunication.open()
@@ -155,7 +162,8 @@ if __name__ == '__main__':
             'choices': ['1. Print basic info to serial',
                         '2. Send basic test message to server',
                         '3. Send custom message to server',
-                        '4. Do connection sequence to server'
+                        '4. Do initial setup. (If device is restarted)',
+                        '5. Do connection sequence to server'
                         ],
             'filter': lambda val: val[0:1:]  # I want just the number
         },
@@ -170,9 +178,11 @@ if __name__ == '__main__':
     answers = prompt(questions, style=MenuStyle.basic)
 
     print(answers)
-    if answers.get('nb_iot_main_menu') == '4':
+    if answers.get('nb_iot_main_menu') == '5':
         Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
-    if answers.get('nb_iot_main_menu') == '3':
+    elif answers.get('nb_iot_main_menu') == '4':
+        Write.toUniversalFile("".join(NbIoTSender().doInitialSetup()))
+    elif answers.get('nb_iot_main_menu') == '3':
         # sendMessageToServer(answers['message_text'])
         pass
     elif answers.get('nb_iot_main_menu') == '2':
