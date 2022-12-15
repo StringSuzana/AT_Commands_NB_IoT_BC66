@@ -1,3 +1,5 @@
+import enum
+
 from PyInquirer import prompt
 from pyfiglet import Figlet
 import string
@@ -12,6 +14,13 @@ from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 from Sender import Sender
 
+@enum
+class SocketStatus:
+    INITIAL=0,
+    CONNECTING=1,
+    CONNECTED=2,
+    CLOSING=3,
+    REMOTE_CLOSING = 4
 
 class SerialCommunication:
     @staticmethod
@@ -145,6 +154,25 @@ class NbIoTSender:
                 print("Try connecting again")
 
         return self.wholeResponse
+
+    def findParamInArray(self, param: str, arr: []) -> Param:
+        res = next(filter(lambda p: p.name == param, arr))
+        return res
+
+    def openSocket(self) -> str:
+        '''
+        todo:put params in commands
+        '''
+        self.resetWholeResponse()
+        socket_status_response = self.executeAtCommand(at_read_socket_status)
+        if len(socket_status_response.wanted) != 0:
+            connectID = self.findParamInArray("<connectID>", socket_status_response.wanted)
+            socket_state = self.findParamInArray("<socket_state>", socket_status_response.wanted)
+            if connectID.value == SocketStatus.CONNECTING | connectID.value == SocketStatus.CONNECTED:
+                socket_close_response = self.executeAtCommand(at_close_socket)
+            else:
+                socket_open_response = self.executeAtCommand(at_open_socket)
+
 
     def readIpAddress(self) -> str:
         # TODO

@@ -280,25 +280,66 @@ at_write_activate_pdn_ctx = AtCommand(
     max_wait_for_response=1)
 
 '''
-Open Socket
-AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,0,0' 
+Open and close Socket
+>>> contextID = 1, connectID= 0, access_mode = DIRECT PUSH MODE = 1
+AT+QIOPEN=<contextID>,<connectID>,<service_type>,<IP_address>,<remote_port>,<local_port>,<access_mode>,<protocol_type>
+AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,1,0' 
 
 '''
 
-at_read_last_error_code = AtCommand(
-    command='AT+QIGETERROR',
-    description="This command is used to query the <err> code and specific description "
-                "of the <err> code returned by the last TCP/IP command",
-    long_description="If response is ERROR, there is an error related to ME functionality:",
+at_open_socket = AtCommand(
+    command='AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,4444,<access_mode>,0',
+    description="This command is used to open a socket service. "
+                "Provide: <IP_address>,<remote_port> and <access_mode>",
+    long_description="The service type can be specified by <service_type>, "
+                     "and the data access mode can be specified by <access_mode>. "
+                     "The URC +QIOPEN:<connectID>,<err> will be reported to indicate whether the"
+                     " socket service has been opened successfully."
+                     "The command takes effect immediately.When a UDP session is created, the module can automatically "
+                     "backup the latest UDP configurations, and the MCU can send/receive data directly after being woken up from sleep."
+                     "IF ERROR: If the connection failed, AT+QICLOSE=<connectID> must be executed to close the socket",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(
-            Status.OK, response=["+QIGETERROR:<err>,<errcode_description>", "OK"],
-            wanted=[Param(name="<err>", response_row=0),
-                    Param(name="<errcode_description>", response_row=0)]),
+            Status.OK, response=["OK", "+QIOPEN:<connectID>,<err>"],
+            wanted=[Param(name="<connectID>", response_row=1),
+                    Param(name="<err>", response_row=1)]),
+        AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=60)
+
+at_close_socket = AtCommand(
+    command='AT+QICLOSE=0',
+    description="AT+QICLOSE=<connectID> This command is used to close a socket service.",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(
+            Status.OK, response=["OK", "CLOSE OK"],
+            wanted=[]),
         AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 
+at_read_socket_status = AtCommand(
+    command='AT+QISTATE=1,0',
+    description='AT+QISTATE=<query_type>,<connectID> Query the state of socket.',
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[AtResponse(
+        Status.OK,
+        response=["+QISTATE:<connectID>,<service_type>,<IP_address>,<remote_port>,<local_port>,<socket_state>,<contextID>,<access_mode>]",
+                  "OK"],
+        wanted=[
+            Param(name="<connectID>", response_row=0),
+            Param(name="<service_type>", response_row=0),
+            Param(name="<IP_address>", response_row=0),
+            Param(name="<remote_port>", response_row=0),
+            Param(name="<local_port>", response_row=0),
+            Param(name="<socket_state>", response_row=0),
+            Param(name="<contextID>", response_row=0),
+            Param(name="<access_mode>", response_row=0),
+        ]),
+        AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])
+    ],
+    max_wait_for_response=1
+)
 '''
 Error codes
 '''
