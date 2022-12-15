@@ -45,6 +45,9 @@ class NbIoTSender:
         self.executeAtCommandSequence(AT_SEND_UDP_MESSAGE_SEQUENCE)
         pass
 
+    def _checkLastErrorMessage(self):
+        error_message = self.executeAtCommand(at_read_last_error_code)
+
     def sendTestMessageToServer(self):
         """get parameters from Nb Iot"""
         basic_info = self.getNbIotModuleInfo()
@@ -55,12 +58,12 @@ class NbIoTSender:
         First step in initialization of the device
         """
         '''
-        + at_write_full_phone_functionality,
-        + at_write_eps_status_codes (can be saved to device),
-        -/+                    at_write_turn_off_psm,
-        + at_write_connection_status_enable_urc,
-        + at_write_enable_wakeup_indication,
-        + at_read_is_wakeup_indication_enabled,
+        + at_write_full_phone_functionality                     | AT+CFUN=1
+        + at_write_eps_status_codes (can be saved to device)    | AT+CEREG=5
+        -/+                    at_write_turn_off_psm            | AT+CPSMS=0
+        + at_write_connection_status_enable_urc                 | AT+CSCON=1
+        + at_write_enable_wakeup_indication                     | AT+QATWAKEUP=1
+        + at_read_is_wakeup_indication_enabled                  | AT+QATWAKEUP?
         '''
         self.executeAtCommandSequence(
             [
@@ -78,12 +81,12 @@ class NbIoTSender:
         Initialize operator and activate
         """
         '''
-        +at_write_connection_status_enable_urc | AT_WRITE_CONNECTION_STATUS_URC = 'AT+CSCON=1',
-        +at_write_operator_selection | AT_WRITE_OPERATOR_SELECTION = 'AT+COPS=1,2,"21901"'
+        +at_write_connection_status_enable_urc              | AT+CSCON=1
+        +at_write_operator_selection                        | AT+COPS=1,2,"21901"
             - AT_EXECUTE_EXTENDED_SIGNAL_QUALITY = "AT+CESQ"
-        +at_read_connection_status | AT_READ_CONNECTION_STATUS = "AT+CSCON?" (should be +CSCON: 1,1)
-        +at_read_operator_selection | AT_READ_OPERATOR_SELECTION = 'AT+COPS?' (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
-        +at_write_attach_to_packet_domain_service | AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1' (The state of PDP context activation, should be +CGATT: 1)
+        +at_read_connection_status                          | AT+CSCON? (should be +CSCON: 1,1)
+        +at_read_operator_selection                         | AT+COPS?  (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
+        +at_write_attach_to_packet_domain_service           | AT+CGATT=1 (The state of PDP context activation, should be +CGATT: 1)
         '''
         self.executeAtCommandSequence(
             [
@@ -110,15 +113,18 @@ class NbIoTSender:
 
     def establishConnection(self) -> str:
         """
-        | at_read_pdp_context_status,
-        |---->>if status is active, deactivate:
-        |-------- at_write_pdp_context_status_deactivate,
-        |-------- at_read_pdp_context_status,
-        |---->>else:
-        |-------- at_write_pdp_context_status_activate,
-        |-------- at_read_pdp_context_status,
-        |-------- at_write_activate_pdn_ctx
+        Set PDP context and activate PDN
         """
+        '''
+        | at_read_pdp_context_status                        | AT+CGACT?
+        |---->>if status is active, deactivate:
+        |-------- at_write_pdp_context_status_deactivate    | AT+CGACT=0,1
+        |-------- at_read_pdp_context_status                | AT+CGACT?
+        |---->>else:
+        |-------- at_write_pdp_context_status_activate      | AT+CGACT=1,<cid>
+        |-------- at_read_pdp_context_status                | AT+CGACT?
+        |-------- at_write_activate_pdn_ctx                 | AT+QGACT=1,1,"iot.ht.hr"
+        '''
         cid_in_active_state = "1"
 
         self.resetWholeResponse()

@@ -285,6 +285,37 @@ AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,0,
 
 '''
 
+at_read_last_error_code = AtCommand(
+    command='AT+QIGETERROR',
+    description="This command is used to query the <err> code and specific description "
+                "of the <err> code returned by the last TCP/IP command",
+    long_description="If response is ERROR, there is an error related to ME functionality:",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(
+            Status.OK, response=["+QIGETERROR:<err>,<errcode_description>", "OK"],
+            wanted=[Param(name="<err>", response_row=0),
+                    Param(name="<errcode_description>", response_row=0)]),
+        AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
+'''
+Error codes
+'''
+at_read_last_error_code = AtCommand(
+    command='AT+QIGETERROR',
+    description="This command is used to query the <err> code and specific description "
+                "of the <err> code returned by the last TCP/IP command",
+    long_description="If response is ERROR, there is an error related to ME functionality:",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(
+            Status.OK, response=["+QIGETERROR:<err>,<errcode_description>", "OK"],
+            wanted=[Param(name="<err>", response_row=0),
+                    Param(name="<errcode_description>", response_row=0)]),
+        AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
 AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY,
                              AT_WRITE_OLD_SCRAMBLING_ALGORITHM,
                              AT_WRITE_TURN_OFF_PSM,
