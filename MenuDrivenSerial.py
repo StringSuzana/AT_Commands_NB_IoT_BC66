@@ -50,8 +50,31 @@ class NbIoTSender:
         basic_info = self.getNbIotModuleInfo()
         self.sendMessageToServer(basic_info)
 
-    def initForConnection(self) -> str:
+    def _initBasicFunctionalities(self) -> str:
         """
+        First step in initialization of the device
+        """
+        '''
+        + at_write_full_phone_functionality,
+        + at_write_eps_status_codes (can be saved to device),
+        -/+                    at_write_turn_off_psm,
+        + at_write_connection_status_enable_urc,
+        + at_write_enable_wakeup_indication,
+        + at_read_is_wakeup_indication_enabled,
+        '''
+        self.executeAtCommandSequence(
+            [
+                at_write_full_phone_functionality,
+                at_write_eps_status_codes,
+                at_write_turn_off_psm,
+                at_write_enable_wakeup_indication,
+                at_read_is_wakeup_indication_enabled
+            ])
+        return self.wholeResponse
+
+    def _initForConnection(self) -> str:
+        """
+        Second step in initialization of the device
         Initialize operator and activate
         """
         '''
@@ -62,13 +85,31 @@ class NbIoTSender:
         +at_read_operator_selection | AT_READ_OPERATOR_SELECTION = 'AT+COPS?' (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
         +at_write_attach_to_packet_domain_service | AT_WRITE_ATTACH_TO_PACKET_DOMAIN_SERVICE = 'AT+CGATT=1' (The state of PDP context activation, should be +CGATT: 1)
         '''
+        self.executeAtCommandSequence(
+            [
+                at_write_connection_status_enable_urc,
+                at_write_operator_selection,
+                at_read_connection_status,
+                at_read_operator_selection,
+                at_write_attach_to_packet_domain_service
+            ])
 
-        pass
+        return self.wholeResponse
+
+    def doInitialSetup(self) -> str:
+        """
+        First step: initBasicFunctionalities(), Second step: initForConnection()
+        Decide on AT_RESET_MODULE after setup
+        """
+        self.resetWholeResponse()
+
+        self._initBasicFunctionalities()
+        self._initForConnection()
+
+        return self.wholeResponse
 
     def establishConnection(self) -> str:
         """
-
-
         | at_read_pdp_context_status,
         |---->>if status is active, deactivate:
         |-------- at_write_pdp_context_status_deactivate,
@@ -96,31 +137,6 @@ class NbIoTSender:
             activate_pdn_context_result = self.executeAtCommand(at_write_activate_pdn_ctx, i=5)
             if activate_pdn_context_result.status == Status.ERROR:
                 print("Try connecting again")
-
-        return self.wholeResponse
-
-    def doInitialSetup(self) -> str:
-        """
-        at_write_full_phone_functionality,
-        at_write_eps_status_codes (can be saved to device),
-                            at_write_turn_off_psm,
-        at_write_connection_status_enable_urc,
-        at_write_enable_wakeup_indication,
-        at_read_is_wakeup_indication_enabled,
-
-        CALL FOR METHOD initForConnection
-        AT_RESET_MODULE
-
-        """
-        self.resetWholeResponse()
-        self.executeAtCommandSequence(
-            [
-                at_write_full_phone_functionality,
-                at_write_eps_status_codes,
-                at_write_turn_off_psm,
-                at_write_enable_wakeup_indication,
-                at_read_is_wakeup_indication_enabled
-            ])
 
         return self.wholeResponse
 
