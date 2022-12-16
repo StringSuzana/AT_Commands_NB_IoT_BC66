@@ -5,6 +5,7 @@ from pyfiglet import Figlet
 import string
 import serial as serial
 
+import Config
 from AtCommand import AtCommand
 from AtCommands import *
 from AtResponse import AtResponse
@@ -14,13 +15,22 @@ from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 from Sender import Sender
 
+
 @enum
 class SocketStatus:
-    INITIAL=0,
-    CONNECTING=1,
-    CONNECTED=2,
-    CLOSING=3,
+    INITIAL = 0,
+    CONNECTING = 1,
+    CONNECTED = 2,
+    CLOSING = 3,
     REMOTE_CLOSING = 4
+
+
+@enum
+class AccessMode:
+    """Data access mode of socket services"""
+    BUFFER_ACCESS = 0,
+    DIRECT_PUSH = 1
+
 
 class SerialCommunication:
     @staticmethod
@@ -160,8 +170,15 @@ class NbIoTSender:
         return res
 
     def openSocket(self) -> str:
-        '''
+        """
         todo:put params in commands
+        """
+        '''
+        at_read_socket_status       | AT+QISTATE=1,0
+            if opened
+                at_close_socket     | AT+QICLOSE=0
+            else
+                at_open_socket      | AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,4444,<access_mode>,0
         '''
         self.resetWholeResponse()
         socket_status_response = self.executeAtCommand(at_read_socket_status)
@@ -171,8 +188,10 @@ class NbIoTSender:
             if connectID.value == SocketStatus.CONNECTING | connectID.value == SocketStatus.CONNECTED:
                 socket_close_response = self.executeAtCommand(at_close_socket)
             else:
-                socket_open_response = self.executeAtCommand(at_open_socket)
-
+                at_open_socket_command = at_open_socket.replaceParamInCommand("<IP_address>", Config.Server.IP_ADDR)
+                at_open_socket_command = at_open_socket_command.replaceParamInCommand("<remote_port>", Config.Server.PORT)
+                at_open_socket_command = at_open_socket_command.replaceParamInCommand("<access_mode>", AccessMode.DIRECT_PUSH)
+                socket_open_response = self.executeAtCommand(at_open_socket_command)
 
     def readIpAddress(self) -> str:
         # TODO
