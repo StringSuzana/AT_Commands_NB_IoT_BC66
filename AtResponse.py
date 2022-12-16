@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from ResponseStatus import Status
+from ResponseStatusEnum import Status
 
 
 @dataclass

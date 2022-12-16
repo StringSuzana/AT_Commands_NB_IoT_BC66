@@ -7,7 +7,7 @@ from typing import List
 from ArrayUtils import findIndex
 from AtCommand import AtCommand
 from AtResponse import AtResponse, Param
-from ResponseStatus import Status
+from ResponseStatusEnum import Status
 
 
 @dataclass

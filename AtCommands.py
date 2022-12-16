@@ -4,7 +4,7 @@ from AtCommand import AtCommand
 from AtConstants import *
 from AtResponse import AtResponse, Param
 from AtResponseReader import Read
-from ResponseStatus import Status
+from ResponseStatusEnum import Status
 
 '''
 Info
@@ -288,7 +288,7 @@ AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,1,
 '''
 
 at_open_socket = AtCommand(
-    command='AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,4444,<access_mode>,0',
+    command='AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,5555,<access_mode>,0',
     description="This command is used to open a socket service. "
                 "Provide: <IP_address>,<remote_port> and <access_mode>",
     long_description="The service type can be specified by <service_type>, "
@@ -336,7 +336,35 @@ at_read_socket_status = AtCommand(
             Param(name="<contextID>", response_row=0),
             Param(name="<access_mode>", response_row=0),
         ]),
+        AtResponse(status=Status.OK, response=["OK"], wanted=[]),
         AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])
+    ],
+    max_wait_for_response=1
+)
+'''
+Send messages
+'''
+at_send_hex_test = AtCommand(
+    command='AT+QISENDEX=0,5,3132333435',
+    description='AT+QISENDEX=<connectID>,<send_length>,<hex_string>. To send message',
+    long_description='send_length= max length is 512 bytes.',
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(Status.OK, response=["OK", "SEND OK"], wanted=[]),
+        AtResponse(Status.OK, response=["OK", "SEND FAIL"], wanted=[]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
+    ],
+    max_wait_for_response=1
+)
+at_send_hex = AtCommand(
+    command='AT+QISENDEX=0,<send_length>,<hex_string>',
+    description='AT+QISENDEX=<connectID>,<send_length>,<hex_string>. To send message',
+    long_description='send_length= max length is 512 bytes.',
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(Status.OK, response=["OK", "SEND OK"], wanted=[]),
+        AtResponse(Status.OK, response=["OK", "SEND FAIL"], wanted=[]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1
 )

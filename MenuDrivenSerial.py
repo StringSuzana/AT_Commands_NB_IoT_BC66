@@ -1,12 +1,13 @@
-import enum
+import time
 
 from PyInquirer import prompt
 from pyfiglet import Figlet
 import string
 import serial as serial
+import binascii
 
 import Config
-from AtCommand import AtCommand
+from AccessModeEnum import AccessMode
 from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -14,22 +15,9 @@ from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 from Sender import Sender
+from SocketStatusEnum import SocketStatus
 
-
-@enum
-class SocketStatus:
-    INITIAL = 0,
-    CONNECTING = 1,
-    CONNECTED = 2,
-    CLOSING = 3,
-    REMOTE_CLOSING = 4
-
-
-@enum
-class AccessMode:
-    """Data access mode of socket services"""
-    BUFFER_ACCESS = 0,
-    DIRECT_PUSH = 1
+NB_IOT_MAIN_MENU = 'nb_iot_main_menu'
 
 
 class SerialCommunication:
@@ -58,11 +46,21 @@ class NbIoTSender:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
 
-    def sendMessageToServer(self, message_text):
-        self.executeAtCommandSequence(AT_OPEN_SOCKET_SEQUENCE)
-        # transform message into ...hex?
-        self.executeAtCommandSequence(AT_SEND_UDP_MESSAGE_SEQUENCE)
-        pass
+    def sendMessageToServer(self, message_text: str) -> str:
+        """
+        Send custom message to server
+        AT+QISENDEX=0,<send_length>,<hex_string>
+        """
+        self.resetWholeResponse()
+
+        message_hex = message_text.encode('utf-8').hex()
+        send_length = len(message_text.encode('utf-8'))
+
+        at_send_hex_command = at_send_hex.replaceParamInCommand('<send_length>', str(send_length))
+        at_send_hex_command = at_send_hex_command.replaceParamInCommand('<hex_string>', message_hex)
+        self.executeAtCommand(at_send_hex_command)
+        #self.executeAtCommand(at_read_last_error_code)
+        return self.wholeResponse
 
     def _checkLastErrorMessage(self):
         error_message = self.executeAtCommand(at_read_last_error_code)
@@ -165,13 +163,14 @@ class NbIoTSender:
 
         return self.wholeResponse
 
-    def findParamInArray(self, param: str, arr: []) -> Param:
-        res = next(filter(lambda p: p.name == param, arr))
-        return res
+    def sendMessage(self) -> str:
+        self.resetWholeResponse()
+        self.executeAtCommand(at_send_hex_test)
+        return self.wholeResponse
 
-    def openSocket(self) -> str:
+    def reopenSocket(self) -> str:
         """
-        todo:put params in commands
+        Open UDP socket
         """
         '''
         at_read_socket_status       | AT+QISTATE=1,0
@@ -181,17 +180,23 @@ class NbIoTSender:
                 at_open_socket      | AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,4444,<access_mode>,0
         '''
         self.resetWholeResponse()
-        socket_status_response = self.executeAtCommand(at_read_socket_status)
-        if len(socket_status_response.wanted) != 0:
-            connectID = self.findParamInArray("<connectID>", socket_status_response.wanted)
-            socket_state = self.findParamInArray("<socket_state>", socket_status_response.wanted)
-            if connectID.value == SocketStatus.CONNECTING | connectID.value == SocketStatus.CONNECTED:
-                socket_close_response = self.executeAtCommand(at_close_socket)
-            else:
-                at_open_socket_command = at_open_socket.replaceParamInCommand("<IP_address>", Config.Server.IP_ADDR)
-                at_open_socket_command = at_open_socket_command.replaceParamInCommand("<remote_port>", Config.Server.PORT)
-                at_open_socket_command = at_open_socket_command.replaceParamInCommand("<access_mode>", AccessMode.DIRECT_PUSH)
-                socket_open_response = self.executeAtCommand(at_open_socket_command)
+        self.executeAtCommand(at_close_socket)
+        time.sleep(2)
+        self.executeAtCommand(at_read_socket_status)
+        # connectID = findParamInArray("<connectID>", socket_status_response.wanted)
+        # socket_state = findParamInArray("<socket_state>", socket_status_response.wanted)
+        # if connectID.value == SocketStatus.CONNECTING | connectID.value == SocketStatus.CONNECTED:
+        # socket_close_response = self.executeAtCommand(at_close_socket)
+
+        at_open_socket_command = at_open_socket.replaceParamInCommand("<IP_address>", Config.Server.IP_ADDR)
+        at_open_socket_command = at_open_socket_command.replaceParamInCommand("<remote_port>", Config.Server.PORT)
+        at_open_socket_command = at_open_socket_command.replaceParamInCommand("<access_mode>", str(AccessMode.DIRECT_PUSH.value))
+        socket_open_response = self.executeAtCommand(at_open_socket_command)
+
+        time.sleep(5)
+        self.executeAtCommand(at_read_socket_status)
+
+        return self.wholeResponse
 
     def readIpAddress(self) -> str:
         # TODO
@@ -241,14 +246,15 @@ if __name__ == '__main__':
     questions = [
         {
             'type': 'list',
-            'name': 'nb_iot_main_menu',
+            'name': NB_IOT_MAIN_MENU,
             'message': 'Select what you want to do:',
             'choices': ['1. Print basic info to serial',
                         '2. Send basic test message to server',
                         '3. Send custom message to server',
                         '4. Do initial setup. (If device is restarted)',
                         '5. Do connection sequence to server',
-                        '6. Reset device'
+                        '6. Reset device',
+                        '7. Open socket',
                         ],
             'filter': lambda val: val[0:1:]  # I want just the number
         },
@@ -256,24 +262,25 @@ if __name__ == '__main__':
             'type': 'input',
             'name': 'message_text',
             'message': 'Write the custom message you wish to send.',
-            'when': lambda answers: answers['nb_iot_main_menu'] == '3',
+            'when': lambda answers: answers[NB_IOT_MAIN_MENU] == '3',
             'validate': MessageValidator
         }
     ]
     answers = prompt(questions, style=MenuStyle.basic)
 
     print(answers)
-    if answers.get('nb_iot_main_menu') == '6':
+    if answers.get(NB_IOT_MAIN_MENU) == '7':
+        Write.toUniversalFile("".join(NbIoTSender().reopenSocket()))
+    elif answers.get(NB_IOT_MAIN_MENU) == '6':
         NbIoTSender().reset()
-    if answers.get('nb_iot_main_menu') == '5':
+    elif answers.get(NB_IOT_MAIN_MENU) == '5':
         Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
-    elif answers.get('nb_iot_main_menu') == '4':
+    elif answers.get(NB_IOT_MAIN_MENU) == '4':
         Write.toUniversalFile("".join(NbIoTSender().doInitialSetup()))
-    elif answers.get('nb_iot_main_menu') == '3':
-        # sendMessageToServer(answers['message_text'])
-        pass
-    elif answers.get('nb_iot_main_menu') == '2':
-        # sendTestMessageToServer()
-        pass
-    elif answers.get('nb_iot_main_menu') == '1':
+    elif answers.get(NB_IOT_MAIN_MENU) == '3':
+        message_text = answers.get('message_text')
+        Write.toUniversalFile("".join(NbIoTSender().sendMessageToServer(message_text)))
+    elif answers.get(NB_IOT_MAIN_MENU) == '2':
+        Write.toUniversalFile("".join(NbIoTSender().sendMessage()))
+    elif answers.get(NB_IOT_MAIN_MENU) == '1':
         Write.toUniversalFile("".join(NbIoTSender().getNbIotModuleInfo()))
