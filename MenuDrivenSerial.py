@@ -8,6 +8,7 @@ import binascii
 
 import Config
 from AccessModeEnum import AccessMode
+from ArrayUtils import findParamInArray
 from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -59,7 +60,7 @@ class NbIoTSender:
         at_send_hex_command = at_send_hex.replaceParamInCommand('<send_length>', str(send_length))
         at_send_hex_command = at_send_hex_command.replaceParamInCommand('<hex_string>', message_hex)
         self.executeAtCommand(at_send_hex_command)
-        #self.executeAtCommand(at_read_last_error_code)
+        # self.executeAtCommand(at_read_last_error_code)
         return self.wholeResponse
 
     def _checkLastErrorMessage(self):
@@ -148,8 +149,8 @@ class NbIoTSender:
         pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status, i=0)
 
         if len(pdp_ctx_response.wanted) != 0:
-            cid = next(filter(lambda p: p.name == "<cid>", pdp_ctx_response.wanted))
-            state = next(filter(lambda p: p.name == "<state>", pdp_ctx_response.wanted))
+            cid = findParamInArray("<cid>", pdp_ctx_response.wanted)
+            state = findParamInArray("<state>", pdp_ctx_response.wanted)
             all_cid = [c_id for c_id in pdp_ctx_response.wanted if cid.value == "<cid>"]
             if state.value == cid_in_active_state:
                 self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", cid.value), i=1)
