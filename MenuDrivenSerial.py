@@ -268,7 +268,6 @@ if __name__ == '__main__':
         }
     ]
     answers = prompt(questions, style=MenuStyle.basic)
-
     print(answers)
     if answers.get(NB_IOT_MAIN_MENU) == '7':
         Write.toUniversalFile("".join(NbIoTSender().reopenSocket()))
