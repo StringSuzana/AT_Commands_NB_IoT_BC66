@@ -4,7 +4,6 @@
 
 #define BUFFER_SIZE 1024
 
-// Structure to store the serial port handle and configuration
 typedef struct
 {
     HANDLE hSerial;
@@ -12,7 +11,6 @@ typedef struct
     COMMTIMEOUTS timeouts;
 } Serial;
 
-// Function prototypes
 Serial *serial_open(const char *port, int baudrate, int timeout);
 void serial_close(Serial *self);
 void serial_write(Serial *self, const char *data, int length);

@@ -3,7 +3,6 @@
 #include "AtCommand.h"
 #include "AtResponse.h"
 #include "ResponseStatusEnum.h"
-#include "Read.h"
 
 const char ATI[] = "ATI";
 
