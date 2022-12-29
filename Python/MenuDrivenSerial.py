@@ -25,7 +25,7 @@ class SerialCommunication:
     @staticmethod
     def open() -> bool:
         global ser
-        ser = serial.Serial(port="COM10", baudrate=9600, timeout=301)
+        ser = serial.Serial(port="COM19", baudrate=9600, timeout=301)
         while not ser.isOpen():
             print('.')
             continue
@@ -108,11 +108,11 @@ class NbIoTSender:
         '''
         self.executeAtCommandSequence(
             [
+                at_write_attach_to_packet_domain_service,
                 at_write_connection_status_enable_urc,
                 at_write_operator_selection,
                 at_read_connection_status,
-                at_read_operator_selection,
-                at_write_attach_to_packet_domain_service
+                at_read_operator_selection
             ])
 
         return self.wholeResponse
@@ -210,6 +210,8 @@ class NbIoTSender:
         Sender().sendAtCommand(ser=ser, command=at_reset.command)
 
     def executeAtCommand(self, at: AtCommand, i: int = 0):
+        cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
+        print(cmd_and_descr)
         Sender().sendAtCommand(ser=ser, command=at.command)
         at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
         self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)

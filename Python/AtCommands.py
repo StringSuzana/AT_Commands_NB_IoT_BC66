@@ -209,7 +209,7 @@ at_write_attach_to_packet_domain_service = AtCommand(
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
-    max_wait_for_response=85)
+    max_wait_for_response=1285)
 
 at_reset = AtCommand(
     command='AT+QRST=1',

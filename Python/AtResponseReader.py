@@ -112,7 +112,7 @@ class Read:
             print(f"There is nothing to read")
             return AtResponse(status=result_status, response=result_array, wanted=[])
         elif len(at_expected_response.wanted) == 0:
-            print(f"There is no wanted parameters")
+            # print(f"There is no wanted parameters")
             return AtResponse(status=result_status, response=result_array, wanted=[])
         else:
             print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
