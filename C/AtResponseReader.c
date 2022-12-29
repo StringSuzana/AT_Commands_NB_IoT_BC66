@@ -30,5 +30,8 @@ AtResponse readAtResponse(Read *self, Serial *serial, AtCommand *at_command_obj)
         wait_intervals--; // I want to sleep only 1 second at a time
         sleep(1);
     }
-    return at_command_obj->read_response_method(self->at_status, self->at_response, sizeof(self->at_response), self->at_expected_response);
+    return read_answer(self->at_status, self->at_response, sizeof(self->at_response), self->at_expected_response);
+}
+AtResponse read_answer(Status result_status, const char **result_array, size_t result_array_len, AtResponse *at_expected_response)
+{
 }
