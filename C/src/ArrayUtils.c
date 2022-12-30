@@ -22,5 +22,8 @@ Param findParamInArray(const char *param, const Param *arr, size_t arr_len)
         }
     }
     // Return an empty Param if not found
-    return (Param){.name = "", .value = "", .response_row = 0};
+    Param result = {.name = "",
+                    .value = "",
+                    .response_row = 0};
+    return result;
 }
