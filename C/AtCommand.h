@@ -15,12 +15,9 @@ typedef struct
     const char *description;
     const char *long_description;
     int expected_responses_count;
-    AtResponsesArray expected_responses;
+    const AtResponsesArray expected_responses;
     int max_wait_for_response;
 } AtCommand;
-
-AtCommand *AtCommand_create(char *command, char *description, AtResponse **expected_responses, int expected_response_count, char *long_description, int max_wait_for_response);
 void AtCommand_replaceParamInCommand(AtCommand *at_command, char *param, char *value);
-void AtCommand_destroy(AtCommand *at_command);
 
 #endif

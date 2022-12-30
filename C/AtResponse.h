@@ -2,17 +2,16 @@
 #define AT_RESPONSE_H
 #include "SocketStatusEnum.h"
 #include "Param.h"
+#define MAX_RESPONSE_LINES 10
+#define MAX_WANTED_PARAMS 10
 
 typedef struct
 {
     SocketStatus status;
-    char **response;
+    char *response[MAX_RESPONSE_LINES];
     int response_size;
-    Param *wanted;
+    Param wanted[MAX_WANTED_PARAMS];
     int wanted_size;
 } AtResponse;
-
-AtResponse *create_at_response(SocketStatus status, char **response, int response_size, Param *wanted, int wanted_size);
-void free_at_response(AtResponse *at_response);
 
 #endif /* AT_RESPONSE_H */

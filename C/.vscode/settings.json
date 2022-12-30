@@ -1,0 +1,9 @@
+{
+  "[c]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+    //☝🏼 Select the MS extension as defaultFormatter
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "ms-vscode.cpptools"
+  }
+}
