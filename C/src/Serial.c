@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "Serial.h"
 
 Serial *serial_open(const char *port, int baudrate, int timeout)
@@ -45,10 +46,15 @@ void serial_close(Serial *self)
     free(self);
 }
 
-void serial_write(Serial *self, const char *data, int length)
+void serial_write(Serial *self, char *data, int length)
 {
     DWORD dwBytesWritten;
+
     WriteFile(self->hSerial, data, length, &dwBytesWritten, NULL);
+
+    const char *newline = "\r";
+    WriteFile(self->hSerial, newline, strlen(newline), &dwBytesWritten, NULL);
+
     printf("serial_write dwBytesWritten: %d \n", dwBytesWritten);
     printf("serial_write length: %d \n", length);
     printf("serial_write data: %s \n", data);

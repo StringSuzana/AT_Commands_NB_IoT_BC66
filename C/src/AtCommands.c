@@ -2,14 +2,14 @@
 #include "AtResponse.h"
 #include "ResponseStatusEnum.h"
 
-AtResponse ERROR_RESPONSE = {
+static AtResponse ERROR_RESPONSE = {
     .status = STATUS_ERROR,
     .response = {"ERROR"},
     .response_size = 1,
     .wanted = NULL,
     .wanted_size = 0};
 
-AtCommand at_read_ati()
+static AtCommand at_read_ati()
 {
     AtResponse ati_response = {
         .status = STATUS_OK,
@@ -22,7 +22,7 @@ AtCommand at_read_ati()
         .responses_size = 2,
         .responses = {ati_response, ERROR_RESPONSE}};
 
-    AtCommand at_read_ati = {
+    AtCommand ati = {
         .command = "ATI",
         .description = "Display Product Identification Information.",
         .long_description = "",
@@ -30,5 +30,5 @@ AtCommand at_read_ati()
         .expected_responses = expected_responses,
         .max_wait_for_response = 1};
 
-    return at_read_ati;
+    return ati;
 }
