@@ -5,7 +5,11 @@
 
 typedef struct
 {
-    AtResponse responses[MAX_RESPONSES];
+    AtResponse **responses;
     int responses_size;
 } AtResponsesArray;
+
+AtResponsesArray *create_at_responses_array(int size, AtResponse atResponses[]);
+void destroy_at_responses_array(AtResponsesArray *array);
+
 #endif /* AT_RESPONSES_ARRAY_H */

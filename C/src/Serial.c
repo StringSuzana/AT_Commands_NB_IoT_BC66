@@ -60,7 +60,7 @@ void serial_write(Serial *self, char *data, int length)
     printf("serial_write data: %s \n", data);
 }
 
-void serial_read(Serial *self)
+char *serial_read(Serial *self)
 {
     char buffer[BUFFER_SIZE];
     DWORD dwBytesRead;
@@ -71,7 +71,10 @@ void serial_read(Serial *self)
         {
             printf("Read %d bytes:\n", dwBytesRead);
             for (int i = 0; i < dwBytesRead; i++)
+            {
                 printf("%c", buffer[i]);
+            }
+            return buffer;
         }
     }
     else

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include "ResponseStatusEnum.h"
 #include "Param.h"
-#include "Param.h"
 
 #define MAX_RESPONSE_LINES 10
 #define MAX_WANTED_PARAMS 10

@@ -1,6 +1,6 @@
-#include "AtResponseReader.h"
+#include "AtReader.h"
 
-// AtResponse readAtResponse(Read *self, Serial *serial, AtCommand *at_command_obj)
+// AtResponse readAtResponse(Reader *self, Serial *serial, AtCommand *at_command_obj)
 // {
 //     char *serial_msg = fromSerial(serial);
 //     int wait_intervals = at_command_obj->max_wait_for_response;
@@ -23,6 +23,14 @@
 //     response.wanted_size = 0;
 //     return response;
 // }
+AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand at)
+{
+}
+char *fromSerial(Serial *serial)
+{
+    char *out = serial_read(serial);
+    return out;
+}
 char **getResponseRowFrom_Array(char **arr, int row)
 {
     char *response_row = strtok(arr[row], ":");

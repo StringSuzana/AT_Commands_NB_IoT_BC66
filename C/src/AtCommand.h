@@ -13,11 +13,13 @@ typedef struct
 {
     const char *command;
     const char *description;
-    const char *long_description;
     int expected_responses_size;
-    AtResponsesArray expected_responses;
+    AtResponsesArray *expected_responses;
     int max_wait_for_response;
 } AtCommand;
+
 void AtCommand_replaceParamInCommand(AtCommand *at_command, char *param, char *value);
+AtCommand *createAtCommand(const char *command, const char *description, int expected_responses_size, AtResponsesArray *expected_responses, int max_wait_for_response);
+void destroyAtCommand(AtCommand *at_command);
 
 #endif

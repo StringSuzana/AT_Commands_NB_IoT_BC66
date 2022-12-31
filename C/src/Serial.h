@@ -14,6 +14,6 @@ typedef struct
 Serial *serial_open(const char *port, int baudrate, int timeout);
 void serial_close(Serial *self);
 void serial_write(Serial *self, char *data, int length);
-void serial_read(Serial *self);
+char *serial_read(Serial *self);
 
 #endif /* SERIAL_STRUCT_H */

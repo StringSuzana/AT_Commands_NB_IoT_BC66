@@ -17,9 +17,8 @@ typedef struct
     char **at_response;
     int at_status;
     AtResponse *at_expected_response;
-} Read;
-
-char **getResponseRowFrom_Array(char **arr, int row);
+} AtReader;
+AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand at);
 AtResponse answerWithWantedParams(Status result_status, char *result_array[], int result_array_len, const AtResponse at_expected_response);
 
 #endif /* AT_RESPONSE_READER_H */
