@@ -131,6 +131,6 @@ class Read:
             return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
 
     @staticmethod
-    def getResponseRowFrom_Array(arr, row):
+    def getResponseRowFrom_Array(arr: list[str], row: int):
         response_row = arr[row].replace(':', ',').split(',')
         return response_row

@@ -1,6 +1,5 @@
 #include "AtCommand.h"
 #include "AtResponse.h"
-#include "ResponseStatusEnum.h"
 
 static AtResponse ERROR_RESPONSE = {
     .status = STATUS_ERROR,

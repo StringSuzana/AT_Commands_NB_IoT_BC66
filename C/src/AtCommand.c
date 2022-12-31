@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "AtCommand.h"
-#include "AtResponse.h"
 
 void AtCommand_replaceParamInCommand(AtCommand *at_command, char *param, char *value)
 {
