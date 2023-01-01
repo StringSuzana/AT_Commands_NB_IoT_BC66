@@ -5,7 +5,7 @@
 
 typedef struct
 {
-    AtResponse **responses;
+    AtResponse responses[MAX_RESPONSES];
     int responses_size;
 } AtResponsesArray;
 

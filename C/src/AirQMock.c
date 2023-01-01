@@ -1,13 +1,14 @@
+
 #include "AirQMock.h"
 #include <stdio.h>
 #include "Serial.h"
-#include "NbIoTSender.h"
+#include "AtSender.h"
 #include "AtCommands.c"
 
-NbIoTSender sender = {
-    .serverIpAddress = IP_ADDR,
-    .serverPort = PORT,
-    .protocol = UDP,
+AtSender sender = {
+    .serverIpAddress = "IP_ADDR",
+    .serverPort = "PORT",
+    .protocol = "UDP",
     .wholeResponse = ""};
 
 AtResponse sendMessageOverNbIoT(char *messageToSend, AtResponseCallback at_response_callback)
