@@ -44,7 +44,7 @@ char **getResponseRowFrom_Array(char **arr, int row)
     }
     return response_array;
 }
-AtResponse answerWithWantedParams(MessageStatus result_status, char *result_array[], int result_array_len, const AtResponse at_expected_response)
+AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse at_expected_response)
 {
     if (result_array_len == 0)
     {

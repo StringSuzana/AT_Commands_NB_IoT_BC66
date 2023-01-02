@@ -10,7 +10,7 @@
 
 typedef struct
 {
-    MessageStatus status;
+    ResponseStatus status;
     char *response[MAX_RESPONSE_LINES];
     int response_size;
     Param wanted[MAX_WANTED_PARAMS];

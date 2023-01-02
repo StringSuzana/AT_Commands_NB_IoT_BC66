@@ -19,7 +19,7 @@ static AtCommand at_read_ati()
             .wanted = {{.name = "<revision>", .value = "", .response_row = 2}}
     };
 
-    AtResponsesArray expected_responses = {
+    AtResponseArray expected_responses = {
             .responses_size = 2,
             .responses = {ati_response, ERROR_RESPONSE}
     };
@@ -42,7 +42,7 @@ static AtCommand at_read_imei()
             .wanted_size = 1,
             .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
     };
-    AtResponsesArray expected_responses = {
+    AtResponseArray expected_responses = {
             .responses_size = 2,
             .responses = {imei_response, ERROR_RESPONSE}
     };

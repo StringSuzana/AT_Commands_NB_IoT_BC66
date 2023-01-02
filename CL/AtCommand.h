@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "AtResponsesArray.h"
+#include "AtResponseArray.h"
 
 #define MAX_COMMAND_LEN 256
 #define MAX_DESCRIPTION_LEN 256
@@ -15,7 +15,7 @@ typedef struct
     char command[MAX_COMMAND_LEN];
     const char description[MAX_DESCRIPTION_LEN];
     int expected_responses_size;
-    AtResponsesArray expected_responses;
+    AtResponseArray expected_responses;
     int max_wait_for_response;
 } AtCommand;
 
