@@ -1,10 +1,10 @@
 #include <stdlib.h>
-#include "AtResponsesArray.h"
+#include "AtResponseArray.h"
 
 
-AtResponsesArray *create_at_responses_array(const int size, AtResponse at_responses[])
+AtResponseArray *create_at_responses_array(const int size, AtResponse at_responses[])
 {
-    AtResponsesArray *array = malloc(sizeof(AtResponsesArray));
+    AtResponseArray *array = malloc(sizeof(AtResponseArray));
     //array->responses_size = size;
 
     //array->responses = malloc(size * sizeof(AtResponse));
@@ -16,7 +16,7 @@ AtResponsesArray *create_at_responses_array(const int size, AtResponse at_respon
     return array;
 }
 
-void destroy_at_responses_array(AtResponsesArray *array)
+void destroy_at_responses_array(AtResponseArray *array)
 {
     for (int i = 0; i < array->responses_size; i++)
     {

@@ -14,9 +14,9 @@ void at_command_replace_param_in_command(const AtCommand *at_command, const char
 
         if (strlen(param) >= (strlen(value) + 1)) // NULL TERMINATOR
         {
-	        const size_t param_len = strlen(param);
-	        const size_t value_len = strlen(value);
-	        const int rest_len = param_len - value_len;
+            const size_t param_len = strlen(param);
+            const size_t value_len = strlen(value);
+            const int rest_len = param_len - value_len;
             strncpy(match, value, param_len);
             for (int i = 1; i <= rest_len; i++)
             {

@@ -7,10 +7,10 @@
 AtReader initAtReader()
 {
     AtReader atReader = {
-        .current_response = "",
-        .at_response = NULL, // LIST OF STRINGS
-        .at_status = STATUS_WAITING,
-        .at_expected_response = NULL // AtResponse
+            .current_response = "",
+            .at_response = NULL, // LIST OF STRINGS
+            .at_status = STATUS_WAITING,
+            .at_expected_response = NULL // AtResponse
     };
     return atReader;
 }

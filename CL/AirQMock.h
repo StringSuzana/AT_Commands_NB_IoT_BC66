@@ -6,7 +6,7 @@
 typedef struct
 {
     char *messageToSend;
-    AtResponseCallback *at_response_callback;
+    AtResponseCallback at_response_callback;
 } AirQMock;
 
 AtResponse sendMessageOverNbIoT(char *messageToSend, AtResponseCallback at_response_callback);

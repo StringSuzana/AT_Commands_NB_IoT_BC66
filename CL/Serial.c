@@ -8,12 +8,12 @@ Serial *serial_open(const char *port, int baudrate, int timeout)
 
     // Open serial port via CreateFile
     serial->h_serial = CreateFile(port,
-                                 GENERIC_READ | GENERIC_WRITE,
-                                 0,
-                                 NULL,
-                                 OPEN_EXISTING,
-                                 0,
-                                 NULL);
+                                  GENERIC_READ | GENERIC_WRITE,
+                                  0,
+                                  NULL,
+                                  OPEN_EXISTING,
+                                  0,
+                                  NULL);
 
     if (serial->h_serial == INVALID_HANDLE_VALUE)
     {

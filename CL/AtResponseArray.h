@@ -7,9 +7,9 @@ typedef struct
 {
     AtResponse responses[MAX_RESPONSES];
     int responses_size;
-} AtResponsesArray;
+} AtResponseArray;
 
-AtResponsesArray *create_at_responses_array(int size, AtResponse at_responses[]);
-void destroy_at_responses_array(AtResponsesArray *array);
+AtResponseArray *create_at_responses_array(int size, AtResponse at_responses[]);
+void destroy_at_responses_array(AtResponseArray *array);
 
 #endif /* AT_RESPONSES_ARRAY_H */
