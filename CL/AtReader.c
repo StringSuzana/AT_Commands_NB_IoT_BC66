@@ -23,7 +23,7 @@
 //     response.wanted_size = 0;
 //     return response;
 // }
-AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand at)
+AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
 {
 }
 char *fromSerial(Serial *serial)
@@ -44,7 +44,7 @@ char **getResponseRowFrom_Array(char **arr, int row)
     }
     return response_array;
 }
-AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse at_expected_response)
+AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse *at_expected_response)
 {
     if (result_array_len == 0)
     {
@@ -66,16 +66,16 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
 
         Param wanted_params[MAX_WANTED_PARAMS];
 
-        for (int i = 0; i < at_expected_response.wanted_size; i++)
+        for (int i = 0; i < at_expected_response->wanted_size; i++)
         {
-            int row = at_expected_response.wanted[i].response_row;
+            int row = at_expected_response->wanted[i].response_row;
             char *response_row = result_array[row];
-            char *expected_row = at_expected_response.response[row];
+            char *expected_row = at_expected_response->response[row];
 
-            int param_index = find_index(expected_row, at_expected_response.wanted[i].name, strlen(expected_row));
+            int param_index = find_index(expected_row, at_expected_response->wanted[i].name, strlen(expected_row));
             if (param_index != NOT_FOUND)
             {
-                wanted_params[i] = (Param){.name = at_expected_response.wanted[i].name, .value = response_row[param_index], .response_row = row};
+                wanted_params[i] = (Param){.name = at_expected_response->wanted[i].name, .value = response_row[param_index], .response_row = row};
             }
         }
 

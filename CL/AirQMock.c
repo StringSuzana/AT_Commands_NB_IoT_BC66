@@ -1,7 +1,7 @@
 #include "AirQMock.h"
 #include <stdio.h>
 #include "Serial.h"
-#include "AtSender.h"
+#include "NbIoT.h"
 #include "AtCommands.c"
 
 AtSender sender = {
