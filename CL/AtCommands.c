@@ -56,3 +56,26 @@ static AtCommand at_read_imei()
 
     return imei;
 }
+static AtCommand at_read_imei_replace_test()
+{
+    const AtResponse imei_response = {
+            .status = STATUS_OK,
+            .response_size = 4,
+            .response = {"+CGSN:<IMEI>", "OK"},
+            .wanted_size = 1,
+            .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
+    };
+    AtResponseArray expected_responses = {
+            .responses_size = 2,
+            .responses = {imei_response, ERROR_RESPONSE}
+    };
+    const AtCommand imei = {
+            .command = "AT+CGSN=<IMEI_PICK>",
+            .description = "Display Product IMEI.",
+            .expected_responses_size = 2,
+            .expected_responses = expected_responses,
+            .max_wait_for_response = 1
+    };
+
+    return imei;
+}

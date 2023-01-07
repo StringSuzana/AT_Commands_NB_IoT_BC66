@@ -1,16 +1,18 @@
 #include "AtCommand.h"
-
+/***
+ * Takes pointer to atCommand and replaces <param> with given value.
+ * Works only if param is longer than value. Cloud be modified to work even if value is bigger if needed.
+ * **/
 void at_command_replace_param_in_command(const AtCommand *at_command, const char *param, char *value)
 {
     char new_command[MAX_COMMAND_LEN] = { 0 };
     strcpy(new_command, at_command->command);
     char* match = strstr(new_command, param);
     int match_index = match - new_command;
-    printf("%s", match);
 
     if (match != NULL)
     {
-        printf("%s", match);
+        //printf("%s", match);
 
         if (strlen(param) >= (strlen(value) + 1)) // NULL TERMINATOR
         {
@@ -23,8 +25,6 @@ void at_command_replace_param_in_command(const AtCommand *at_command, const char
                 new_command[match_index + i] = new_command[match_index + rest_len + i];
             }
             strncpy_s(at_command->command, strlen(at_command->command), new_command, strlen(at_command->command));
-            printf("\n%s\n", new_command);
-            printf("\n%s\n", at_command->command);
         }
         else
         {

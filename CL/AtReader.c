@@ -51,7 +51,7 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
         printf("There is nothing to read");
         return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
     }
-    else if (at_expected_response.wanted_size == 0)
+    else if (at_expected_response->wanted_size == 0)
     {
         return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
     }
@@ -75,10 +75,14 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
             int param_index = find_index(expected_row, at_expected_response->wanted[i].name, strlen(expected_row));
             if (param_index != NOT_FOUND)
             {
-                wanted_params[i] = (Param){.name = at_expected_response->wanted[i].name, .value = response_row[param_index], .response_row = row};
+               /*TODO
+                * wanted_params[i] = (Param){
+                    .name = at_expected_response->wanted[i].name,
+                    .value = response_row[param_index],
+                    .response_row = row};*/
             }
         }
 
-        return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response.wanted_size};
+        return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
     }
 }
