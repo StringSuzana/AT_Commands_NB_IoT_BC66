@@ -1,5 +1,7 @@
 #include "AtReader.h"
-
+#include "string.h"
+#include <stdio.h>
+#include "StringArray.h"
 // AtResponse readAtResponse(Reader *self, Serial *serial, AtCommand *at_command_obj)
 // {
 //     char *serial_msg = fromSerial(serial);
@@ -26,36 +28,46 @@
 AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
 {
 }
+
 char *fromSerial(Serial *serial)
 {
     char *out = serial_read(serial);
     return out;
 }
-char **getResponseRowFrom_Array(char **arr, int row)
+
+StringArray* getResponseRowFrom_Array(char *arr[], int row)
 {
-    char *response_row = strtok(arr[row], ":");
-    char **response_array = malloc(MAX_WANTED_PARAMS * sizeof(char *));
+    char delim[] = ":";
+    char str[MAX_RESPONSE_ROW_SIZE * MAX_RESPONSE_LINES];
+    strcpy(str, arr[row]);
+
+    char *str_token = strtok(str, delim);
+
+    char **response_array = calloc(0, sizeof(char *));
     int i = 0;
-    while (response_row != NULL)
+    while (str_token != NULL)
     {
-        response_array[i] = response_row;
-        response_row = strtok(NULL, ",");
+        response_array = realloc(response_array,i+1 * sizeof (char *));
+        response_array[i] = calloc(MAX_RESPONSE_ROW_SIZE,sizeof(char *));
+        response_array[i] = strdup(str_token);
+        str_token = strtok(NULL, delim);
         i++;
     }
-    return response_array;
+    StringArray* stringArray = createStringArray(response_array, i);
+    return stringArray;
 }
-AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse *at_expected_response)
+
+AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len,
+                                  const AtResponse *at_expected_response)
 {
     if (result_array_len == 0)
     {
         printf("There is nothing to read");
-        return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
-    }
-    else if (at_expected_response->wanted_size == 0)
+        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+    } else if (at_expected_response->wanted_size == 0)
     {
-        return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
-    }
-    else
+        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+    } else
     {
         printf("AT STATUS: %d\nRESPONSE: ", result_status);
         for (int i = 0; i < result_array_len; i++)
@@ -69,20 +81,21 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
         for (int i = 0; i < at_expected_response->wanted_size; i++)
         {
             int row = at_expected_response->wanted[i].response_row;
-            char *response_row = result_array[row];
-            char *expected_row = at_expected_response->response[row];
+            StringArray* response_row = getResponseRowFrom_Array(result_array, row);
+            StringArray* expected_row = getResponseRowFrom_Array(at_expected_response->response, row);
 
-            int param_index = find_index(expected_row, at_expected_response->wanted[i].name, strlen(expected_row));
+            int param_index = find_index(expected_row->arr, at_expected_response->wanted[i].name, expected_row->size);
             if (param_index != NOT_FOUND)
             {
-               /*TODO
-                * wanted_params[i] = (Param){
-                    .name = at_expected_response->wanted[i].name,
-                    .value = response_row[param_index],
-                    .response_row = row};*/
+                printf("Wanted param: %s ", response_row->arr[param_index]);
+                /*TODO
+                 * wanted_params[i] = (Param){
+                     .name = at_expected_response->wanted[i].name,
+                     .value = response_row[param_index],
+                     .response_row = row};*/
             }
         }
 
-        return (AtResponse){.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
+        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
     }
 }

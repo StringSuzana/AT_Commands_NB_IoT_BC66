@@ -2,6 +2,7 @@
 //#include "Serial.h"
 //#include "AirQMock.h"
 #include "AtCommand.h"
+#include "AtReader.h"
 #include "AtCommands.c"
 
 int main()
@@ -13,10 +14,19 @@ int main()
 
      sendMessageOverNbIoT(airQ.messageToSend, airQ.at_response_callback);*/
 
-    AtCommand cmd = at_read_imei_replace_test();
-    printf("Command before: %s", cmd.command);
+    AtCommand cmd = at_read_imei();
+    //ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse *at_expected_response
+    ResponseStatus result_status = STATUS_OK;
+    char *result_array[] = {"+CGSN:123456987", "OK"};
 
-    at_command_replace_param_in_command(&cmd, "<IMEI_PICK>", "1");
-    printf("Command after: %s", cmd.command);
+    const AtResponse expected_response = {
+            .status = STATUS_OK,
+            .response_size = 4,
+            .response = {"+CGSN:<IMEI>", "OK"},
+            .wanted_size = 1,
+            .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
+    };
+    answerWithWantedParams(result_status, result_array, 2, &expected_response);
+
     return (0);
 }
