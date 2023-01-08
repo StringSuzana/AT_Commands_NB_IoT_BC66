@@ -1,7 +1,3 @@
-//
-// Created by Suz on 07-Jan-23.
-//
-
 #include "StringArray.h"
 #include <stdlib.h>
 

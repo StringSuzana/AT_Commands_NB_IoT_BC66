@@ -88,12 +88,14 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
             if (param_index != NOT_FOUND)
             {
                 printf("Wanted param: %s ", response_row->arr[param_index]);
-                /*TODO
-                 * wanted_params[i] = (Param){
+
+                 wanted_params[i] = (Param){
                      .name = at_expected_response->wanted[i].name,
-                     .value = response_row[param_index],
-                     .response_row = row};*/
+                     .value = strdup(response_row->arr[param_index]),
+                     .response_row = row};
             }
+            destroyStringArray(response_row);
+            destroyStringArray(expected_row);
         }
 
         return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
