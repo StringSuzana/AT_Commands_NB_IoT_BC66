@@ -18,7 +18,7 @@ Serial *serial_open(const char *port, int baudrate, int timeout)
     if (serial->h_serial == INVALID_HANDLE_VALUE)
     {
         printf("CreateFile failed with error %d.\n", GetLastError());
-        return (1);
+        return (NULL);
     }
 
     // Serial port config
