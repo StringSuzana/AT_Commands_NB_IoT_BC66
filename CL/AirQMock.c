@@ -5,21 +5,23 @@
 #include "AtCommands.c"
 
 AtSender sender = {
-    .serverIpAddress = "IP_ADDR",
-    .serverPort = "PORT",
-    .protocol = "UDP",
-    .wholeResponse = ""};
+        .serverIpAddress = "IP_ADDR",
+        .serverPort = "PORT",
+        .protocol = "UDP",
+        .wholeResponse = ""};
 
-AtResponse AirQMock_sendMessageOverNbIoT(AirQMock *self,char *messageToSend, AtResponseCallback at_response_callback)
+AtResponse AirQMock_sendMessageOverNbIoT(AirQMock *self, char *messageToSend, AtResponseCallback at_response_callback)
 {
-        // TODO: replace with more general methods than this direct two:
+    // TODO: replace with more general methods than this direct two:
     AtCommand ati = at_read_ati();
-    executeAtCommand(&sender, self->serial, &ati);
+    AtResponse *response = executeAtCommand(&sender, self->serial, &ati);
     resetWholeResponse(&sender);
+    at_response_callback(response);
 }
 
 void AirQMock_ProcessAtResponse(AtResponse *resulting_at_response)
 {
-    printf("In processing method");
+    printf("TODO: In processing method");
+    printf("%s",*resulting_at_response->response);
     // TODO
 }

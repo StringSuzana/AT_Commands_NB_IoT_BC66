@@ -9,6 +9,6 @@ int find_index(const char* arr[], const char* element, const size_t arr_len)
             return i;
         }
     }
-    return NOT_FOUND;
+    return ELEMENT_NOT_FOUND;
 }
 

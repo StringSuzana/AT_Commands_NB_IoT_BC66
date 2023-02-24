@@ -4,7 +4,7 @@
 
 Serial *serial_open(const char *port, int baudrate, int timeout)
 {
-    Serial *serial = (Serial *)malloc(sizeof(Serial));
+    Serial *serial = (Serial *) malloc(sizeof(Serial));
 
     // Open serial port via CreateFile
     serial->h_serial = CreateFile(port,
@@ -61,9 +61,9 @@ void serial_write(Serial *self, char *data, int length)
     printf("serial_write data: %s \n", data);
 }
 
-char *serial_read(Serial *self)
+String serial_read(Serial *self)
 {
-    char buffer[BUFFER_SIZE];
+    char *buffer = malloc(BUFFER_SIZE);
     DWORD dwBytesRead;
 
     if (ReadFile(self->h_serial, buffer, BUFFER_SIZE, &dwBytesRead, NULL))
@@ -75,11 +75,21 @@ char *serial_read(Serial *self)
             {
                 printf("%c", buffer[i]);
             }
-            return buffer;
+            String result = {
+                    .length=dwBytesRead,
+                    .text= buffer
+            };
+            return result;
         }
-    }
-    else
+    } else
     {
-        printf("An error occured while reading from the serial port (error code %d)\n", GetLastError());
+        printf("An error occurred while reading from the serial port (error code %d)\n", GetLastError());
     }
+    free(buffer); // free dynamically allocated memory in case of error
+
+    String emptyResult = {
+            .length=0,
+            .text=""
+    };
+    return emptyResult;
 }

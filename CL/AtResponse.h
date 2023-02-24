@@ -17,4 +17,7 @@ typedef struct
     Param wanted[MAX_WANTED_PARAMS];
     int wanted_size;
 } AtResponse;
+AtResponse* AtResponse_create ();
+void AtResponse_free ();
+
 #endif /* AT_RESPONSE_H */
