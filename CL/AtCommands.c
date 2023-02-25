@@ -3,7 +3,7 @@
 
 static AtResponse ERROR_RESPONSE = {
         .status = STATUS_ERROR,
-        .response = {"ERROR"},
+        .responses = {"ERROR"},
         .response_size = 1,
         .wanted = NULL,
         .wanted_size = 0
@@ -14,7 +14,7 @@ static AtCommand at_read_ati()
     const AtResponse ati_response = {
             .status = STATUS_OK,
             .response_size = 4,
-            .response = {"Quectel_Ltd", "Quectel_BC66NA", "Revision: BC66NBR01A01:<revision>", "OK"},
+            .responses = {"Quectel_Ltd", "Quectel_BC66", "Revision: <revision>", "OK"},
             .wanted_size = 1,
             .wanted = {{.name = "<revision>", .value = "", .response_row = 2}}
     };
@@ -38,7 +38,7 @@ static AtCommand at_read_imei()
     const AtResponse imei_response = {
             .status = STATUS_OK,
             .response_size = 4,
-            .response = {"+CGSN:<IMEI>", "OK"},
+            .responses = {"+CGSN:<IMEI>", "OK"},
             .wanted_size = 1,
             .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
     };
@@ -61,7 +61,7 @@ static AtCommand at_read_imei_replace_test()
     const AtResponse imei_response = {
             .status = STATUS_OK,
             .response_size = 4,
-            .response = {"+CGSN:<IMEI>", "OK"},
+            .responses = {"+CGSN:<IMEI>", "OK"},
             .wanted_size = 1,
             .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
     };

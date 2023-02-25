@@ -5,8 +5,9 @@
 
 #include "AtCommand.h"
 #include "AtResponse.h"
-#include "ArrayUtils.h"
+#include "array_utils/ArrayUtils.h"
 #include "Serial.h"
+#include "string_utils/StringArray.h"
 
 #define WAITING 0
 #define NOT_FOUND -1
@@ -14,7 +15,7 @@
 typedef struct
 {
     char *current_response;
-    char **at_response;
+    StringArray at_responses;
     int at_status;
     AtResponse *at_expected_response;
 } AtReader;

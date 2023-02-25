@@ -1,14 +1,21 @@
 #include "AtReader.h"
 #include "string.h"
 #include <stdio.h>
-#include "StringArray.h"
+#include "string_utils/CharPtrArray.h"
 #include "TimeUtils.h"
+#include "ResponseStatusNames.h"
+
+void copyFromSerialToSelfCurrentResponse(AtReader *self, String string_from_serial);
+
+void populateArrayWithTokensFromString(StringArray *string_array, char *string, AtCommand *at_command_obj);
+
+void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_serial);
 
 AtReader initAtReader()
 {
     AtReader atReader = {
             .current_response = "",
-            .at_response = NULL, // LIST OF STRINGS
+            .at_responses = NULL, // LIST OF STRINGS
             .at_status = STATUS_WAITING,
             .at_expected_response = NULL // AtResponse
     };
@@ -20,13 +27,25 @@ String fromSerial(Serial *serial)
     String out = serial_read(serial);
     return out;
 }
-// function to check if a string starts with another string
+// function to check if a values starts with another values
 bool startsWith(char *str, char *prefix)
 {
     return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-// function to split a string into an array of strings based on newline characters
+bool starts_with(char *string, char *string_with_colon)
+{
+    char *colon_pos = strrchr(string_with_colon, ':');
+    if (colon_pos == NULL)
+    {
+        // If ':' is not found in string string_with_colon, return false
+        return false;
+    }
+    size_t len = colon_pos - string_with_colon;
+    return strncmp(string, string_with_colon, len) == 0;
+}
+
+// function to split a values into an array of strings based on newline characters
 int splitString(char *str, char **arr, int max_arr_size)
 {
     int arr_size = 0;
@@ -39,7 +58,7 @@ int splitString(char *str, char **arr, int max_arr_size)
     return arr_size;
 }
 
-// function to remove a string from an array of strings at a given index
+// function to remove a values from an array of strings at a given index
 void removeString(char **arr, int index, int arr_size)
 {
     for (int i = index; i < arr_size - 1; i++)
@@ -49,34 +68,62 @@ void removeString(char **arr, int index, int arr_size)
     arr[arr_size - 1] = NULL;
 }
 
-// function to check if a response message contains the expected response
-bool checkIfMessageIsWhole(AtReader *self, ResponseStatus for_status, char *expected_response, char **response_array,
-                           int response_count)
+// function to check if a responses message contains the expected responses
+bool checkIfMessageIsWhole(AtReader *self, ResponseStatus for_status, char *expected_response_array[],
+                           int expected_response_array_size,
+                           StringArray response_array)
 {
-    for (int i = 0; i < response_count; i++)
+    int count_true = 0;
+    for (int i = 0; i < expected_response_array_size; i++)
     {
-        char *response = response_array[i];
-        if (startsWith(response, expected_response))
+        char *response = response_array.values[i].text;
+        if (strcmp(response, expected_response_array[i]) == 0)
         {
-            self->at_status = for_status;
-            removeString(response_array, i, response_count);
-            return true;
+            count_true += 1;
+        }
+        else if (starts_with(response, expected_response_array[i]))
+        {
+            count_true += 1;
         }
     }
-    return false;
+    if (count_true == response_array.array_size)
+    {
+        self->at_status = for_status;
+        return true;
+    } else return false;
 }
 
-void remove_carriage_return(char *str)
+
+void populateArrayWithTokensFromString(StringArray *string_array, char *string, AtCommand *at_command_obj)
 {
-    int i, j;
-    for (i = 0, j = 0; str[i] != '\0'; i++)
+    int response_size = 0;
+    // split the responses into an array of strings
+    char *token_string = strdup(string);
+    char *line = strtok(token_string, "\n");
+
+    while (line != NULL && response_size < MAX_RESPONSE_LINES)
     {
-        if (str[i] != '\r')
-        {
-            str[j++] = str[i];
+        if (strcmp(line, at_command_obj->command) != 0)//at_command_obj->command is ATI + 0000000...
+        { // exclude the command that was sent
+            string_array->values[response_size].text = strdup(line);
+            string_array->values[response_size++].length = strlen(line);
         }
+        line = strtok(NULL, "\n");
     }
-    str[j] = '\0';
+    string_array->array_size = response_size;
+    free(token_string);
+    free(line);
+}
+
+void copyFromSerialToSelfCurrentResponse(AtReader *self, String string_from_serial)
+{
+    char *concatenated = malloc(strlen(self->current_response) + string_from_serial.length + 1);
+    strcpy(concatenated, self->current_response);
+    strncat(concatenated, string_from_serial.text, string_from_serial.length);
+    self->current_response = malloc(strlen(concatenated));
+
+    strcpy(self->current_response, concatenated);
+    free(concatenated);
 }
 
 void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_serial)
@@ -85,86 +132,72 @@ void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_
     {
         return;
     }
+    copyFromSerialToSelfCurrentResponse(self, string_from_serial);
+    removeCarriageReturn(self->current_response);
 
-    char *concatenated = malloc(strlen(self->current_response) + string_from_serial.length + 1);
-    strcpy(concatenated, self->current_response);
-    strncat(concatenated, string_from_serial.text, string_from_serial.length);
-    self->current_response = malloc(strlen(concatenated));
-    strcpy(self->current_response, concatenated);
-
-    char **response_array = malloc(MAX_RESPONSE_LINES * sizeof(char *));
-    int response_size = 0; //todo
-
-    // split the response into an array of strings
-    remove_carriage_return(self->current_response);
-    char *line = strtok(self->current_response, "\n");
-    while (line != NULL && response_size < MAX_RESPONSE_LINES)
-    {
-        if (strcmp(line, at_command_obj->command) != 0)//at_command_obj->command is ATI + 0000000...
-        { // exclude the command that was sent
-            response_array[response_size++] = line;
-        }
-        line = strtok(NULL, "\n");
-    }
-
-    if (response_size == 0)
-    {
-        free(response_array);
-        return;
-    }
-
-    /* strncpy(self->current_response, line, MAX_RESPONSE_ROW_SIZE);
-     self->current_response[MAX_RESPONSE_ROW_SIZE - 1] = '\0';
-
- */
+    //char *response_array[MAX_RESPONSE_LINES] = {0};
+    StringArray responseStringArray;
+    populateArrayWithTokensFromString(&responseStringArray, self->current_response, at_command_obj);//todo: free
 
     for (int i = 0; i < at_command_obj->expected_responses_size; i++)
     {
-        AtResponse expected_response = at_command_obj->expected_responses.responses[i];
-        if (checkIfMessageIsWhole(self, expected_response.status, expected_response.response, response_array,
-                                  response_size))
+        AtResponse expected_at = at_command_obj->expected_responses.responses[i];
+
+        if (checkIfMessageIsWhole(self, expected_at.status, expected_at.responses, expected_at.response_size,
+                                  responseStringArray))
         {
-            AtResponse *at_response = AtResponse_create(expected_response.status, response_array, response_size,
-                                                        expected_response.wanted, expected_response.wanted_size);
-            self->at_expected_response = at_response;
-            free(response_array);
+            //If message is whole, then we can also populate at_responses array
+            populateArrayWithTokensFromString(&self->at_responses, self->current_response, at_command_obj);//todo: free
+
+
+            AtResponse *at_expected_response = AtResponse_create(expected_at.status, expected_at.responses,
+                                                                 expected_at.response_size, expected_at.wanted,
+                                                                 expected_at.wanted_size);
+
+            self->at_expected_response = at_expected_response; //todo: free
             return;
         }
     }
 
     self->at_status = STATUS_WAITING;
-    free(response_array);
-    return;
+
+/*
+    for (int i = 0; response_size >= 0; i--)
+    {
+        free(response_array[response_size]);
+    }
+*/
+
 }
 
 
-AtResponse *answer(ResponseStatus result_status, char **result_array, int result_array_size, AtResponse *expected)
+AtResponse *answer(ResponseStatus result_status, StringArray result_array, AtResponse *expected)
 {
     if (result_status == STATUS_OK)
     {
-        if (result_array_size == 0)
+        if (result_array.array_size == 0)
         {
             AtResponse *response = malloc(sizeof(AtResponse));
             response->status = result_status;
-            response->response_size = result_array_size;
+            response->response_size = result_array.array_size;
             response->wanted_size = 0;
             return response;
         } else
         {
-            printf("AT STATUS: %d\nRESPONSE: ", result_status);
-            for (int i = 0; i < result_array_size; i++)
+            printf("AT STATUS: %s\nRESPONSE: ", getStatusName(result_status));
+            for (int i = 0; i < result_array.array_size; i++)
             {
-                printf("%s ", result_array[i]);
+                printf("%s ", result_array.values[i].text);
             }
             printf("\n");
 
             AtResponse *response = malloc(sizeof(AtResponse));
             response->status = result_status;
-            response->response_size = result_array_size;
+            response->response_size = result_array.array_size;
             response->wanted_size = 0;
-            for (int i = 0; i < result_array_size; i++)
+            for (int i = 0; i < result_array.array_size; i++)
             {
-                response->response[i] = result_array[i];
+                response->responses[i] = result_array.values[i].text;
             }
             return response;
         }
@@ -172,7 +205,7 @@ AtResponse *answer(ResponseStatus result_status, char **result_array, int result
     {
         AtResponse *response = malloc(sizeof(AtResponse));
         response->status = result_status;
-        response->response_size = result_array_size;
+        response->response_size = result_array.array_size;
         response->wanted_size = 0;
         return response;
     }
@@ -186,29 +219,28 @@ AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
     while (self->at_status == STATUS_WAITING && wait_intervals >= 0)
     {
         parseMessage(self, at, serial_msg);
-        serial_msg = fromSerial(serial);
+        serial_msg = fromSerial(serial);//nothing is returned. TODO: fix
         wait_intervals--; // I want to sleep only 1 second at a time
         delay(1);
     }
-    AtResponse *r = answer(self->at_status, self->at_response, sizeof(self->at_response),
-                           self->at_expected_response);
+    AtResponse *r = answer(self->at_status, self->at_responses, self->at_expected_response);
     return r;
 }
 
 // AtResponse read_answer(Status result_status, const char **result_array, size_t result_array_len, AtResponse *at_expected_response)
 // {
-//     AtResponse response;
-//     response.response_size = 0;
-//     response.status = STATUS_ERROR;
-//     response.wanted_size = 0;
-//     return response;
+//     AtResponse responses;
+//     responses.response_size = 0;
+//     responses.status = STATUS_ERROR;
+//     responses.wanted_size = 0;
+//     return responses;
 // }
 /*AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
 {
 }*/
 
 
-StringArray *getResponseRowFrom_Array(char *arr[], int row)
+CharPtrArray *getResponseRowFrom_Array(char *arr[], int row)
 {
     char delim[] = ":";
     char str[MAX_RESPONSE_ROW_SIZE * MAX_RESPONSE_LINES];
@@ -226,7 +258,7 @@ StringArray *getResponseRowFrom_Array(char *arr[], int row)
         str_token = strtok(NULL, delim);
         i++;
     }
-    StringArray *stringArray = createStringArray(response_array, i);
+    CharPtrArray *stringArray = createStringArray(response_array, i);
     return stringArray;
 }
 
@@ -236,10 +268,10 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
     if (result_array_len == 0)
     {
         printf("There is nothing to read");
-        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
     } else if (at_expected_response->wanted_size == 0)
     {
-        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
     } else
     {
         printf("AT STATUS: %d\nRESPONSE: ", result_status);
@@ -254,8 +286,8 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
         for (int i = 0; i < at_expected_response->wanted_size; i++)
         {
             int row = at_expected_response->wanted[i].response_row;
-            StringArray *response_row = getResponseRowFrom_Array(result_array, row);
-            StringArray *expected_row = getResponseRowFrom_Array(at_expected_response->response, row);
+            CharPtrArray *response_row = getResponseRowFrom_Array(result_array, row);
+            CharPtrArray *expected_row = getResponseRowFrom_Array(at_expected_response->responses, row);
 
             int param_index = find_index(expected_row->arr, at_expected_response->wanted[i].name, expected_row->size);
             if (param_index != NOT_FOUND)
@@ -271,6 +303,6 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
             destroyStringArray(expected_row);
         }
 
-        return (AtResponse) {.status = result_status, .response = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
+        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
     }
 }

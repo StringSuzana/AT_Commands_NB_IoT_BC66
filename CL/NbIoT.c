@@ -12,7 +12,7 @@ void resetWholeResponse(AtSender *self)
 
 char *getNbIotModuleInfo(AtSender *self)
 {
-    // char *response = executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE);
+    // char *responses = executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE);
     char *response = "RESPONSE";
     return response;
 }

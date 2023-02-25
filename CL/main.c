@@ -31,7 +31,7 @@ void test_answerWithWantedParams()
     const AtResponse expected_response = {
             .status = STATUS_OK,
             .response_size = 4,
-            .response = {"+CGSN:<IMEI>", "OK"},
+            .responses = {"+CGSN:<IMEI>", "OK"},
             .wanted_size = 1,
             .wanted = {{.name = "<IMEI>", .value = "", .response_row = 0}}
     };

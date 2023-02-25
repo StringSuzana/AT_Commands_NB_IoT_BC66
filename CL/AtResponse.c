@@ -8,10 +8,10 @@ AtResponse* AtResponse_create(ResponseStatus status, char** response, int respon
     at_response->response_size = response_size;
     at_response->wanted_size = wanted_size;
 
-    // Allocate memory for the response strings
+    // Allocate memory for the responses strings
     for (int i = 0; i < response_size; i++) {
-        at_response->response[i] = malloc(MAX_RESPONSE_ROW_SIZE * sizeof(char));
-        strcpy(at_response->response[i], response[i]);
+        at_response->responses[i] = malloc(MAX_RESPONSE_ROW_SIZE * sizeof(char));
+        strcpy(at_response->responses[i], response[i]);
     }
 
     // Allocate memory for the wanted params

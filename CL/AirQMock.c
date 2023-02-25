@@ -22,6 +22,6 @@ AtResponse AirQMock_sendMessageOverNbIoT(AirQMock *self, char *messageToSend, At
 void AirQMock_ProcessAtResponse(AtResponse *resulting_at_response)
 {
     printf("TODO: In processing method");
-    printf("%s",*resulting_at_response->response);
+    printf("%s",*resulting_at_response->responses);
     // TODO
 }

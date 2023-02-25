@@ -1,7 +1,7 @@
 #ifndef SERIAL_STRUCT_H
 #define SERIAL_STRUCT_H
 #include <windows.h>
-#include "AtString.h"
+#include "string_utils/AtString.h"
 
 #define BUFFER_SIZE 1024
 
