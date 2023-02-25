@@ -274,7 +274,7 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
         return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
     } else
     {
-        printf("AT STATUS: %d\nRESPONSE: ", result_status);
+        printf("AT STATUS: %s\nRESPONSE: ", getStatusName(result_status));
         for (int i = 0; i < result_array_len; i++)
         {
             printf("%s ", result_array[i]);
