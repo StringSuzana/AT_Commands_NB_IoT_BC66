@@ -73,7 +73,7 @@ void populateArrayWithTokensFromString(StringArray *string_array, char *string, 
     char *token_string = strdup(string);
     char *line = strtok(token_string, "\n");
 
-    while (line != NULL && response_size < MAX_RESPONSE_LINES)
+    while (line != NULL && response_size < MAX_RESPONSE_ROWS)
     {
         if (strcmp(line, at_command_obj->command) != 0)//at_command_obj->command is ATI + 0000000...
         { // exclude the command that was sent
@@ -107,7 +107,7 @@ void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_
     copyFromSerialToSelfCurrentResponse(self, string_from_serial);
     removeCarriageReturn(self->current_response);
 
-    //char *response_array[MAX_RESPONSE_LINES] = {0};
+    //char *response_array[MAX_RESPONSE_ROWS] = {0};
     StringArray responseStringArray;
     populateArrayWithTokensFromString(&responseStringArray, self->current_response, at_command_obj);//todo: free
 

@@ -1,9 +1,5 @@
 #include <string.h>
-#include <stdlib.h>
 #include "StringArray.h"
-#include "../array_utils/AtResponseArray.h"
-
-//TODO: move all constants in one place
 
 
 StringArray getResponseRowFrom_stringArray(StringArray array, int row)
