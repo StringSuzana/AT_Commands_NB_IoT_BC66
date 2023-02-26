@@ -20,9 +20,9 @@ typedef struct
     AtResponse *at_expected_response;
 } AtReader;
 
-AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand *at);
+AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at);
 
-AtResponse answerWithWantedParams(ResponseStatus result_status, StringArray response, const AtResponse *at_expected_response);
+AtResponse* answerWithWantedParams(ResponseStatus result_status, StringArray response, const AtResponse *at_expected_response);
 
 AtReader initAtReader();
 

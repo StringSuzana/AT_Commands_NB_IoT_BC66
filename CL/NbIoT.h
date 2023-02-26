@@ -21,7 +21,7 @@ void resetWholeResponse(AtSender *self);
 
 char *getNbIotModuleInfo(AtSender *self);
 
-AtResponse executeAtCommand(AtSender *self, Serial *serial, AtCommand *at);
+AtResponse *executeAtCommand(AtSender *self, Serial *serial, AtCommand *at);
 
 char *executeAtCommandSequence(AtSender *self, AtCommand *sequence);
 

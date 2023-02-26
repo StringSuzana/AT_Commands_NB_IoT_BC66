@@ -17,7 +17,7 @@ char *getNbIotModuleInfo(AtSender *self)
     return response;
 }
 
-AtResponse executeAtCommand(AtSender *self, Serial *serial, AtCommand *at)
+AtResponse* executeAtCommand(AtSender *self, Serial *serial, AtCommand *at)
 {
     char *cmd_and_description = "\n%s |>>| %s\n";
     printf(cmd_and_description, at->command, at->description);
@@ -25,7 +25,7 @@ AtResponse executeAtCommand(AtSender *self, Serial *serial, AtCommand *at)
     serial_write(serial, at->command, command_len);
     delay(1);
     AtReader atReader = initAtReader();
-    AtResponse response = readAtResponse(&atReader, serial, at);
+    AtResponse *response = readAtResponse(&atReader, serial, at);
     return response;
 }
 
@@ -39,6 +39,6 @@ AtResponse sendMessageToServer(AtSender *self, Serial *serial, char *message_tex
     AtCommand at_send_hex_command = at_read_imei(); //TODO: Replace with send_hex_message command
     at_command_replace_param_in_command(&at_send_hex_command, "<send_length>", message_length_string);
     at_command_replace_param_in_command(&at_send_hex_command, "<hex_string>", message_text);
-    AtResponse response = executeAtCommand(self, serial, &at_send_hex_command);
+    AtResponse* response = executeAtCommand(self, serial, &at_send_hex_command);
 
 }

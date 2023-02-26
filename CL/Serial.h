@@ -3,7 +3,6 @@
 #include <windows.h>
 #include "string_utils/AtString.h"
 
-
 typedef struct
 {
     HANDLE h_serial;

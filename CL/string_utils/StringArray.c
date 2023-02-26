@@ -26,7 +26,7 @@ StringArray getResponseRowFrom_stringArray(StringArray array, int row)
         }
     }
 
-    return response_row;
+    return response_row;//+cgsn i <IMEI>
 }
 int findIndexIn_StringArray(StringArray array, const char *element)
 {
