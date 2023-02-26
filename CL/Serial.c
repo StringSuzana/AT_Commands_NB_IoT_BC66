@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "Serial.h"
+#include "constants.h"
 #include <stdlib.h>
 
 Serial *serial_open(const char *port, int baudrate, int timeout)

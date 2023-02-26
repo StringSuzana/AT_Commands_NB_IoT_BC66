@@ -5,10 +5,8 @@
 #include "ResponseStatusEnum.h"
 #include "Param.h"
 #include "../string_utils/StringArray.h"
+#include "../constants.h"
 
-#define MAX_RESPONSE_LINES 10
-#define MAX_RESPONSE_ROW_SIZE 1024
-#define MAX_WANTED_PARAMS 10
 
 typedef struct
 {

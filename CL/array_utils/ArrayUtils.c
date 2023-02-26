@@ -1,4 +1,5 @@
 #include "ArrayUtils.h"
+#include "../constants.h"
 
 int find_index(const char *array[], const char *element, const size_t arr_len)
 {

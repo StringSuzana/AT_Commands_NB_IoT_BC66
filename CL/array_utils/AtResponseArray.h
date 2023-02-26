@@ -1,7 +1,6 @@
 #ifndef AT_RESPONSES_ARRAY_H
 #define AT_RESPONSES_ARRAY_H
 #include "../at_responses/AtResponse.h"
-#define MAX_RESPONSES 5
 
 typedef struct
 {

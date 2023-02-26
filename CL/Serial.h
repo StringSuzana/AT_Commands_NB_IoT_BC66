@@ -3,7 +3,6 @@
 #include <windows.h>
 #include "string_utils/AtString.h"
 
-#define BUFFER_SIZE 1024
 
 typedef struct
 {

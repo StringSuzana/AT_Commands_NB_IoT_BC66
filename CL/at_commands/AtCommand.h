@@ -6,9 +6,6 @@
 #include <string.h>
 #include "../array_utils/AtResponseArray.h"
 
-#define MAX_COMMAND_LEN 256
-#define MAX_DESCRIPTION_LEN 256
-#define MAX_LONG_DESCRIPTION_LEN 1024
 
 typedef struct
 {

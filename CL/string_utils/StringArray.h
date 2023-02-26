@@ -2,9 +2,9 @@
 #define STRING_ARRAY_H
 
 #include "AtString.h"
+#include "../constants.h"
 
-#define MAX_STRING_ARRAY_ELEMENTS 10
-#define ELEMENT_NOT_FOUND -1
+
 typedef struct
 {
     String values[MAX_STRING_ARRAY_ELEMENTS];

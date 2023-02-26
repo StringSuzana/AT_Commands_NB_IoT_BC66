@@ -10,8 +10,7 @@
 #include "Serial.h"
 #include "string_utils/StringArray.h"
 
-#define WAITING 0
-#define NOT_FOUND -1
+
 
 typedef struct
 {
