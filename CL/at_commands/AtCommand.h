@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "array_utils/AtResponseArray.h"
+#include "../array_utils/AtResponseArray.h"
 
 #define MAX_COMMAND_LEN 256
 #define MAX_DESCRIPTION_LEN 256

@@ -1,10 +1,10 @@
 #include "NbIoT.h"
 #include "AtReader.h"
-#include "TimeUtils.h"
+#include "time_utils/TimeUtils.h"
 #include <stdio.h>
 #include <string.h>
-#include "AtCommands.c"
-#include "AtCommand.h"
+#include "at_commands/AtCommands.c"
+#include "at_commands/AtCommand.h"
 
 
 void resetWholeResponse(AtSender *self)
@@ -12,7 +12,7 @@ void resetWholeResponse(AtSender *self)
 
 char *getNbIotModuleInfo(AtSender *self)
 {
-    // char *responses = executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE);
+    // char *rows = executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE);
     char *response = "RESPONSE";
     return response;
 }

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "../Param.h"
+#include "../at_responses/Param.h"
 
 #define ELEMENT_NOT_FOUND (-1)
 /*This does not work as well #define ARRAY_SIZE(array) (sizeof(array)/sizeof(array[0]))*/

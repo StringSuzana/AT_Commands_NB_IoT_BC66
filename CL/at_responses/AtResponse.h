@@ -12,9 +12,9 @@
 typedef struct
 {
     ResponseStatus status;
-    char *responses[MAX_RESPONSE_LINES];
-    int response_size;
-    Param wanted[MAX_WANTED_PARAMS];
+    char *rows[MAX_RESPONSE_LINES];
+    int row_size;
+    Param wanted_params[MAX_WANTED_PARAMS];
     int wanted_size;
 } AtResponse;
 AtResponse* AtResponse_create(ResponseStatus status, char** response, int response_size, Param* wanted, int wanted_size);

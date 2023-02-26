@@ -2,8 +2,8 @@
 #include "string.h"
 #include <stdio.h>
 #include "string_utils/CharPtrArray.h"
-#include "TimeUtils.h"
-#include "ResponseStatusNames.h"
+#include "time_utils/TimeUtils.h"
+#include "at_responses/ResponseStatusNames.h"
 
 void copyFromSerialToSelfCurrentResponse(AtReader *self, String string_from_serial);
 
@@ -68,7 +68,7 @@ void removeString(char **arr, int index, int arr_size)
     arr[arr_size - 1] = NULL;
 }
 
-// function to check if a responses message contains the expected responses
+// function to check if a rows message contains the expected rows
 bool checkIfMessageIsWhole(AtReader *self, ResponseStatus for_status, char *expected_response_array[],
                            int expected_response_array_size,
                            StringArray response_array)
@@ -80,8 +80,7 @@ bool checkIfMessageIsWhole(AtReader *self, ResponseStatus for_status, char *expe
         if (strcmp(response, expected_response_array[i]) == 0)
         {
             count_true += 1;
-        }
-        else if (starts_with(response, expected_response_array[i]))
+        } else if (starts_with(response, expected_response_array[i]))
         {
             count_true += 1;
         }
@@ -97,7 +96,7 @@ bool checkIfMessageIsWhole(AtReader *self, ResponseStatus for_status, char *expe
 void populateArrayWithTokensFromString(StringArray *string_array, char *string, AtCommand *at_command_obj)
 {
     int response_size = 0;
-    // split the responses into an array of strings
+    // split the rows into an array of strings
     char *token_string = strdup(string);
     char *line = strtok(token_string, "\n");
 
@@ -143,15 +142,15 @@ void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_
     {
         AtResponse expected_at = at_command_obj->expected_responses.responses[i];
 
-        if (checkIfMessageIsWhole(self, expected_at.status, expected_at.responses, expected_at.response_size,
+        if (checkIfMessageIsWhole(self, expected_at.status, expected_at.rows, expected_at.row_size,
                                   responseStringArray))
         {
             //If message is whole, then we can also populate at_responses array
             populateArrayWithTokensFromString(&self->at_responses, self->current_response, at_command_obj);//todo: free
 
 
-            AtResponse *at_expected_response = AtResponse_create(expected_at.status, expected_at.responses,
-                                                                 expected_at.response_size, expected_at.wanted,
+            AtResponse *at_expected_response = AtResponse_create(expected_at.status, expected_at.rows,
+                                                                 expected_at.row_size, expected_at.wanted_params,
                                                                  expected_at.wanted_size);
 
             self->at_expected_response = at_expected_response; //todo: free
@@ -162,9 +161,9 @@ void parseMessage(AtReader *self, AtCommand *at_command_obj, String string_from_
     self->at_status = STATUS_WAITING;
 
 /*
-    for (int i = 0; response_size >= 0; i--)
+    for (int i = 0; row_size >= 0; i--)
     {
-        free(response_array[response_size]);
+        free(response_array[row_size]);
     }
 */
 
@@ -179,7 +178,7 @@ AtResponse *answer(ResponseStatus result_status, StringArray result_array, AtRes
         {
             AtResponse *response = malloc(sizeof(AtResponse));
             response->status = result_status;
-            response->response_size = result_array.array_size;
+            response->row_size = result_array.array_size;
             response->wanted_size = 0;
             return response;
         } else
@@ -193,11 +192,11 @@ AtResponse *answer(ResponseStatus result_status, StringArray result_array, AtRes
 
             AtResponse *response = malloc(sizeof(AtResponse));
             response->status = result_status;
-            response->response_size = result_array.array_size;
+            response->row_size = result_array.array_size;
             response->wanted_size = 0;
             for (int i = 0; i < result_array.array_size; i++)
             {
-                response->responses[i] = result_array.values[i].text;
+                response->rows[i] = result_array.values[i].text;
             }
             return response;
         }
@@ -205,7 +204,7 @@ AtResponse *answer(ResponseStatus result_status, StringArray result_array, AtRes
     {
         AtResponse *response = malloc(sizeof(AtResponse));
         response->status = result_status;
-        response->response_size = result_array.array_size;
+        response->row_size = result_array.array_size;
         response->wanted_size = 0;
         return response;
     }
@@ -223,17 +222,18 @@ AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
         wait_intervals--; // I want to sleep only 1 second at a time
         delay(1);
     }
-    AtResponse *r = answer(self->at_status, self->at_responses, self->at_expected_response);
+    //(ResponseStatus result_status, char *result_array[], int result_array_len, const AtResponse *at_expected_response);
+    AtResponse *r = answerWithWantedParams(self->at_status, self->at_responses, self->at_expected_response);
     return r;
 }
 
 // AtResponse read_answer(Status result_status, const char **result_array, size_t result_array_len, AtResponse *at_expected_response)
 // {
-//     AtResponse responses;
-//     responses.response_size = 0;
-//     responses.status = STATUS_ERROR;
-//     responses.wanted_size = 0;
-//     return responses;
+//     AtResponse rows;
+//     rows.row_size = 0;
+//     rows.status = STATUS_ERROR;
+//     rows.wanted_size = 0;
+//     return rows;
 // }
 /*AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at)
 {
@@ -262,40 +262,41 @@ CharPtrArray *getResponseRowFrom_Array(char *arr[], int row)
     return stringArray;
 }
 
-AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_array[], int result_array_len,
-                                  const AtResponse *at_expected_response)
+AtResponse answerWithWantedParams(ResponseStatus result_status, AtResponse response, const AtResponse *at_expected_response)
 {
-    if (result_array_len == 0)
+    if (response.row_size == 0)
     {
         printf("There is nothing to read");
-        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+        return (AtResponse) {.status = result_status, .rows = *response.rows, .row_size = response.row_size, .wanted_params = NULL, .wanted_size = 0};
     } else if (at_expected_response->wanted_size == 0)
     {
-        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = NULL, .wanted_size = 0};
+        return (AtResponse) {.status = result_status, .rows = *result_array, .row_size = response.row_size, .wanted_params = NULL, .wanted_size = 0};
     } else
     {
         printf("AT STATUS: %s\nRESPONSE: ", getStatusName(result_status));
-        for (int i = 0; i < result_array_len; i++)
+        for (int i = 0; i < response.row_size; i++)
         {
-            printf("%s ", result_array[i]);
+            printf("%s ", response.rows[i]);
         }
         printf("\n");
+
 
         Param wanted_params[MAX_WANTED_PARAMS];
 
         for (int i = 0; i < at_expected_response->wanted_size; i++)
         {
-            int row = at_expected_response->wanted[i].response_row;
-            CharPtrArray *response_row = getResponseRowFrom_Array(result_array, row);
-            CharPtrArray *expected_row = getResponseRowFrom_Array(at_expected_response->responses, row);
+            int row = at_expected_response->wanted_params[i].response_row;
+            CharPtrArray *response_row = getResponseRowFrom_Array(response, row);
+            CharPtrArray *expected_row = getResponseRowFrom_Array(at_expected_response->rows, row);
 
-            int param_index = find_index(expected_row->arr, at_expected_response->wanted[i].name, expected_row->size);
+            int param_index = find_index(expected_row->arr, at_expected_response->wanted_params[i].name,
+                                         expected_row->size);
             if (param_index != NOT_FOUND)
             {
                 printf("Wanted param: %s ", response_row->arr[param_index]);
 
                 wanted_params[i] = (Param) {
-                        .name = at_expected_response->wanted[i].name,
+                        .name = at_expected_response->wanted_params[i].name,
                         .value = strdup(response_row->arr[param_index]),
                         .response_row = row};
             }
@@ -303,6 +304,6 @@ AtResponse answerWithWantedParams(ResponseStatus result_status, char *result_arr
             destroyStringArray(expected_row);
         }
 
-        return (AtResponse) {.status = result_status, .responses = result_array, .response_size = result_array_len, .wanted = wanted_params, .wanted_size = at_expected_response->wanted_size};
+        return (AtResponse) {.status = result_status, .rows = response.rows, .row_size = response.row_size, .wanted_params = wanted_params, .wanted_size = at_expected_response->wanted_size};
     }
 }

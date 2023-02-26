@@ -1,8 +1,8 @@
 #ifndef NBIOTSENDER_H
 #define NBIOTSENDER_H
 
-#include "AtResponse.h"
-#include "AtCommand.h"
+#include "at_responses/AtResponse.h"
+#include "at_commands/AtCommand.h"
 #include "Serial.h"
 
 #define IP_ADDR "Server.IP_ADDR"
