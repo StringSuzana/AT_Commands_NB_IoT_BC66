@@ -57,7 +57,7 @@ void serial_write(Serial *self, char *data, int length)
     WriteFile(self->h_serial, newline, strlen(newline), &dwBytesWritten, NULL);
 
     //printf("serial_write dwBytesWritten: %d \n", dwBytesWritten);
-    //printf("serial_write length: %d \n", length);
+    //printf("serial_write size: %d \n", size);
     printf("serial_write data: %s \n", data);
 }
 

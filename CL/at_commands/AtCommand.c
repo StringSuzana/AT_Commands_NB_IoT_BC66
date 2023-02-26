@@ -56,13 +56,13 @@ void destroyAtCommand(AtCommand *at_command)
     free(at_command->description);
     for (int i = 0; i < at_command->expected_responses_size; i++)
     {
-        AtResponse *rows = at_command->expected_responses->rows[i];
-        for (int j = 0; j < rows->row_size; j++)
+        AtResponse *rows_array = at_command->expected_responses->rows_array[i];
+        for (int j = 0; j < rows_array->row_size; j++)
         {
-            free(rows->rows[j]);
+            free(rows_array->rows_array[j]);
         }
-        free(rows->wanted_params);
+        free(rows_array->wanted_params_array);
     }
-    free(at_command->expected_responses->rows);
+    free(at_command->expected_responses->rows_array);
     free(at_command);
 }*/

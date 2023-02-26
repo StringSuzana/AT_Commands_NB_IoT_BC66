@@ -1,15 +1,18 @@
-//
-// Created by Suz on 07-Jan-23.
-//
+#ifndef CHAR_PTR_ARRAY_H
+#define CHAR_PTR_ARRAY_H
 
-#ifndef CL_CHARPTRARRAY_H
-#define CL_CHARPTRARRAY_H
-
-typedef struct{
-    char ** arr;
+typedef struct
+{
+    char **arr;
     int size;
-}CharPtrArray;
-CharPtrArray * createNewStringArray(int size);
-CharPtrArray * createStringArray(char ** arr, int size);
-void destroyStringArray(CharPtrArray * charPtrArray);
-#endif //CL_CHARPTRARRAY_H
+} CharPtrArray;
+
+CharPtrArray *createNewCharPtrArray(int size);
+
+CharPtrArray *createCharPtrArray(char **arr, int size);
+
+void destroyCharPtrArray(CharPtrArray *charPtrArray);
+
+CharPtrArray *getResponseRowFrom_charArray(char *arr[], int row);
+
+#endif //CHAR_PTR_ARRAY_H

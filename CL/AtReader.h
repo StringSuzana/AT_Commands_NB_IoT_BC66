@@ -16,14 +16,14 @@
 typedef struct
 {
     char *current_response;
-    StringArray at_responses;
+    StringArray at_response_rows;
     int at_status;
     AtResponse *at_expected_response;
 } AtReader;
 
-AtResponse *readAtResponse(AtReader *self, Serial *serial, AtCommand *at);
+AtResponse readAtResponse(AtReader *self, Serial *serial, AtCommand *at);
 
-AtResponse answerWithWantedParams(ResponseStatus result_status, AtResponse response, const AtResponse *at_expected_response);
+AtResponse answerWithWantedParams(ResponseStatus result_status, StringArray response, const AtResponse *at_expected_response);
 
 AtReader initAtReader();
 

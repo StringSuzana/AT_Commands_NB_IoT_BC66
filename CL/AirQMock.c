@@ -15,24 +15,24 @@ AtResponse AirQMock_sendMessageOverNbIoT(AirQMock *self, char *messageToSend, At
 {
     // TODO: replace with more general methods than this direct two:
     AtCommand ati = at_read_ati();
-    AtResponse *response = executeAtCommand(&sender, self->serial, &ati);
+    AtResponse response = executeAtCommand(&sender, self->serial, &ati);
 
     resetWholeResponse(&sender);
-    at_response_callback(response);
+    at_response_callback(&response);
 }
 AtResponse AirQMock_initialSequence(AirQMock *self, AtResponseCallback at_response_callback)
 {
     // TODO: replace with more general methods than this direct two:
     AtCommand ati = at_read_ati();
-    AtResponse *response = executeAtCommand(&sender, self->serial, &ati);
+    AtResponse response = executeAtCommand(&sender, self->serial, &ati);
 
     resetWholeResponse(&sender);
-    at_response_callback(response);
+    at_response_callback(&response);
 }
 void AirQMock_ProcessAtResponse(AtResponse *resulting_at_response)
 {
     printf("\nTODO: In processing method");
-    //printf("%s",*resulting_at_response->rows);
+    //printf("%s",*resulting_at_response->rows_array);
     // TODO
 }
 
@@ -42,16 +42,9 @@ void test_answerWithWantedParams(AirQMock *self, AtResponseCallback at_response_
 
     ResponseStatus result_status = STATUS_OK;
     //char *result_array[] = {"+CGSN:123456987", "OK"};
-    AtResponse *response = executeAtCommand(&sender, self->serial, &cmd);
+    AtResponse response = executeAtCommand(&sender, self->serial, &cmd);
 
+//(ResponseStatus result_status, AtResponse response, const AtResponse *at_expected_response)
 
-    const AtResponse expected_response = {
-            .status = STATUS_OK,
-            .row_size = 2,
-            .rows = {"+CGSN:<IMEI>", "OK"},
-            .wanted_size = 1,
-            .wanted_params = {{.name = "<IMEI>", .value = "", .response_row = 0}}
-    };
-    answerWithWantedParams(result_status, response->rows, response->row_size, &expected_response);
-    at_response_callback(response);
+    at_response_callback(&response);
 }
