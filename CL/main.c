@@ -7,7 +7,7 @@
 
 int main()
 {
-    Serial *serial = serial_open("\\\\.\\COM19", CBR_9600, 301);
+    Serial *serial = serial_open("\\\\.\\COM9", CBR_9600, 301);
     printf("==PROGRAM STARTED==\n");
     AirQMock airQ = {
             .messageToSend = "Send this message",

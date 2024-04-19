@@ -45,6 +45,20 @@ at_read_power_supply_voltage = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
+at_read_signal_strength_level_and_bit_error_rate = AtCommand(
+    command='AT+CSQ',
+    description="This Execution Command returns the received signal strength level <rssi> "
+                "and the channel bit error rate <ber> from the MT.",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["+CSQ:<rssi>,<ber>", "OK"],
+            wanted=[Param(name="<rssi>"), Param(name="<ber>")]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
+        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+    ],
+    max_wait_for_response=1)
 '''
 Basic Setup
 '''
@@ -108,13 +122,18 @@ at_write_turn_off_psm = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 
+# When enabled, the answer +CSCON: 1 or 0 can come at any time there is a change in connection mode
+#    TODO: write reader so that is checks if answer that came is in fact the connection status URC
+#            OR think about not using the signaling, rather just query the AT+CSCON?
+
 at_write_connection_status_enable_urc = AtCommand(
     command=AT_WRITE_CONNECTION_STATUS_URC,
     description="This Write Command controls the presentation of an URC.",
     long_description="This Write Command controls the presentation of an URC. "
                      "If you write <n>=1, "
                      "then  +CSCON: <mode> is sent from the MT (Mobile Termination) when the "
-                     "connection mode of the MT is changed.",
+                     "connection mode of the MT is changed. Remains valid after deep-sleep wakeup. "
+                     "The configuration will not be saved to NVRAM.",
     read_response_method=Read.answer,
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
@@ -164,13 +183,26 @@ at_execute_extended_signal_quality = AtCommand(
     command=AT_EXECUTE_EXTENDED_SIGNAL_QUALITY,
     description="This Execution Command returns received signal quality parameters.",
     long_description="The terminal will provide a current signal strength indicator of 0 to 99,"
-                     " where a larger number indicates better signal quality",
+                     " where a larger number indicates better signal quality."
+                     "*** <rscp> and <ecno> are not applicable for NB-IoT network and should be set to "
+                     "-not known- or -not detectable- (255) for BC66/BC66-NA modules. "
+                     "*** the network quality can be evaluated according to a general rule as specified: "
+                     "Strong: RSRP ≥ -100 dBm and RSRQ ≥ -7 dB. "
+                     "Median: -100 dbm ≥ RSRP ≥ -110 dbm, and RSRQ ≥ -11 dB."
+                     "<rsrp> Integer type. Reference signal received power (RSRP, see 3GPP 36.133). "
+                     "When sending data is needed, RSRP is recommended to be greater than -115 dbm.",
     read_response_method=Read.answer,
     expected_responses=[
         AtResponse(
-            Status.OK, response=["+CESQ: <rxlev>,<ber>,<rscp>,<ecno>,<rsrq>,<rsrp>", "OK"], wanted=[]),
+            Status.OK, response=["+CESQ: <rxlev>,<ber>,<rscp>,<ecno>,<rsrq>,<rsrp>", "OK"],
+            wanted=[Param(name="<rxlev>", response_row=0),
+                    Param(name="<ber>", response_row=0),
+                    Param(name="<rscp>", response_row=0),
+                    Param(name="<ecno>", response_row=0),
+                    Param(name="<rsrq>", response_row=0),
+                    Param(name="<rsrp>", response_row=0)]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
-    max_wait_for_response=1)
+    max_wait_for_response=2)
 
 at_read_connection_status = AtCommand(
     command=AT_READ_CONNECTION_STATUS,
@@ -209,7 +241,7 @@ at_write_attach_to_packet_domain_service = AtCommand(
     expected_responses=[
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
-    max_wait_for_response=1285)
+    max_wait_for_response=86)
 
 at_reset = AtCommand(
     command='AT+QRST=1',
@@ -354,7 +386,7 @@ at_send_hex_test = AtCommand(
         AtResponse(Status.OK, response=["OK", "SEND FAIL"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
-    max_wait_for_response=1
+    max_wait_for_response=2
 )
 at_send_hex = AtCommand(
     command='AT+QISENDEX=0,<send_length>,<hex_string>',
@@ -368,6 +400,7 @@ at_send_hex = AtCommand(
     ],
     max_wait_for_response=1
 )
+
 '''
 Error codes
 '''
@@ -383,6 +416,20 @@ at_read_last_error_code = AtCommand(
             wanted=[Param(name="<err>", response_row=0),
                     Param(name="<errcode_description>", response_row=0)]),
         AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
+at_write_enable_verbose_errors = AtCommand(
+    command='AT+CMEE=2',
+    description="This command enables verbose error reporting. Enables +CME ERROR: <err> and description."
+                "Remains valid after deep-sleep wakeup. "
+                "Configuration will not be saved to NVRAM.",
+    read_response_method=Read.answer,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["OK"],
+            wanted=[])
+    ],
     max_wait_for_response=1)
 
 AT_INITIAL_SETUP_SEQUENCE = [AT_WRITE_FULL_PHONE_FUNCTIONALITY,

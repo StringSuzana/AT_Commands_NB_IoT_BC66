@@ -11,6 +11,7 @@ class Param:
     name: str
     value: str = ""
     response_row: int = 0
+    description: str = "" #TODO: implement?
 
 
 @dataclass

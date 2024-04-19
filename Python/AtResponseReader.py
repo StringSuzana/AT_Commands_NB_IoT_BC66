@@ -90,8 +90,9 @@ class Read:
         return True
 
     '''
-    Below are methods for referencing in At commands
-    in read_response_method property
+    Below are met*hods for referencing in At commands
+ 
+   in read_response_method property
     '''
 
     @staticmethod
@@ -115,7 +116,7 @@ class Read:
             # print(f"There is no wanted parameters")
             return AtResponse(status=result_status, response=result_array, wanted=[])
         else:
-            print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+            #print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
             wanted_params = []
 
             for wanted in at_expected_response.wanted:
