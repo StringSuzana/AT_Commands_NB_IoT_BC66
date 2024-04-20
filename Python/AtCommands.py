@@ -97,17 +97,58 @@ at_write_old_scrambling_algorithm = AtCommand(
 '''
 at_write_eps_status_codes = AtCommand(
     command=AT_WRITE_EPS_STATUS_CODES,
-    description="Write URC for EPS Network Registration Status.",
+    description="Write URC for EPS Network Registration Status. ",
     long_description="This Write Command configures the different unsolicited result codes for "
-                     "EPS Network Registration Status.",
+                     "EPS Network Registration Status. "
+                     "<stat> Integer type. EPS registration status."
+                     "0 Not registered, MT is not currently searching an operator to register to."
+                     "1 Registered, home network"
+                     "2 Not registered, but MT is currently trying to attach or searching an operator to register to."
+                     "3 Registration denied"
+                     "4 Unknown (e.g. out of E-UTRAN coverage)"
+                     "5 Registered, roaming",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[AtResponse(
+        Status.OK, response=[
+            "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
+            "OK"],
+        wanted=[Param(name="<n>"),
+                Param(name="<stat>"),
+                Param(name="<tac>"),
+                Param(name="<ci>"),
+                Param(name="<AcT>"),
+                Param(name="<cause_type>"),
+                Param(name="<reject_cause>"),
+                Param(name="<Active-Time>"),
+                Param(name="<Periodic-TAU>"),
+
+                ]),
+        AtResponse(
+            Status.OK, response=["OK"], wanted=[]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
+at_read_eps_status_codes = AtCommand(
+    command=AT_READ_EPS_NETWORK_REGISTRATION_STATUS,
+    description="Read Network Registration Status.",
+    long_description="This Read Command returns the status of result code presentation and "
+                     "an integer <stat> which shows whether the network has currently indicated the registration of the MT",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
         AtResponse(
             Status.OK, response=[
                 "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
-                "OK"], wanted=[]),
-        AtResponse(
-            Status.OK, response=["OK"], wanted=[]),
+                "OK"],
+            wanted=[Param(name="<n>"),
+                    Param(name="<stat>"),
+                    Param(name="<tac>"),
+                    Param(name="<ci>"),
+                    Param(name="<AcT>"),
+                    Param(name="<cause_type>"),
+                    Param(name="<reject_cause>"),
+                    Param(name="<Active-Time>"),
+                    Param(name="<Periodic-TAU>")
+                    ]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 
@@ -121,10 +162,6 @@ at_write_turn_off_psm = AtCommand(
         AtResponse(Status.OK, response=["OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
-
-# When enabled, the answer +CSCON: 1 or 0 can come at any time there is a change in connection mode
-#    TODO: write reader so that is checks if answer that came is in fact the connection status URC
-#            OR think about not using the signaling, rather just query the AT+CSCON?
 
 at_write_connection_status_enable_urc = AtCommand(
     command=AT_WRITE_CONNECTION_STATUS_URC,
@@ -245,6 +282,16 @@ at_write_attach_to_packet_domain_service = AtCommand(
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=86)
 
+at_read_attach_to_packet_domain_service = AtCommand(
+    command="AT+CGATT?",
+    description="This Read Command returns the current Packet Domain Service state.",
+    long_description="",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(Status.OK, response=["+CGATT:<state>", "OK"], wanted=[Param(name="<state>")]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=86)
+
 at_reset = AtCommand(
     command='AT+QRST=1',
     description="Reset the device",
@@ -257,9 +304,65 @@ at_reset = AtCommand(
 '''
 Enable PDP and connect to PDN sequence
 '''
-at_read_pdp_context_status = AtCommand(
+at_write_create_pdp_context = AtCommand(
+    command='AT+CGDCONT=1,"IP","iot.vip.hr"',#iot.ht.hr
+    description="Create new PDP context command [AT+CGDCONT=<cid>,<PDP_type>,<APN>]",
+    long_description="",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(Status.OK, response=["OK"], wanted=[]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
+at_read_pdp_contexts = AtCommand(
+    command=AT_READ_PDP_CONTEXTS,
+    description="Read all PDP contexts command [AT+CGDCONT=<cid>,<PDP_type>,<APN>]",
+    long_description="",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=[
+        AtResponse(Status.OK, response=[
+            "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+            "OK"], wanted=[Param(name="<cid>", response_row=0),
+                           Param(name="<PDP_type>", response_row=0),
+                           Param(name="<APN>", response_row=0),
+                           Param(name="<PDP_addr>", response_row=0)]),
+        AtResponse(
+            Status.OK, response=[
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "OK"], wanted=[Param(name="<cid>", response_row=0),
+                               Param(name="<PDP_type>", response_row=0),
+                               Param(name="<APN>", response_row=0),
+                               Param(name="<PDP_addr>", response_row=0),
+                               Param(name="<cid>", response_row=1),
+                               Param(name="<PDP_type>", response_row=1),
+                               Param(name="<APN>", response_row=1),
+                               Param(name="<PDP_addr>", response_row=1)
+                               ]),
+        AtResponse(
+            Status.OK, response=[
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "OK"], wanted=[Param(name="<cid>", response_row=0),
+                               Param(name="<PDP_type>", response_row=0),
+                               Param(name="<APN>", response_row=0),
+                               Param(name="<PDP_addr>", response_row=0),
+                               Param(name="<cid>", response_row=1),
+                               Param(name="<PDP_type>", response_row=1),
+                               Param(name="<APN>", response_row=1),
+                               Param(name="<PDP_addr>", response_row=1),
+                               Param(name="<cid>", response_row=2),
+                               Param(name="<PDP_type>", response_row=2),
+                               Param(name="<APN>", response_row=2),
+                               Param(name="<PDP_addr>", response_row=2)
+                               ]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+    max_wait_for_response=1)
+
+at_read_pdp_context_statuses = AtCommand(
     command=AT_READ_PDP_CONTEXT_STATE,
-    description="Reads if (PDP) Packet Data Protocol context is activated. If It is, it should be deactivated before setting PDN",
+    description="Reads status of (PDP) Packet Data Protocol contexts (profiles). Display context id <cid> and state <state>",
     long_description="",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
@@ -319,6 +422,7 @@ at_write_activate_pdn_ctx = AtCommand(
             wanted=[Param(name="<cid>", response_row=1),
                     Param(name="<result>", response_row=1),
                     Param(name="<activated_PDP_type>", response_row=1)]),
+        AtResponse(Status.OK, response=["+QGACT:<cid>,<type>,<result>,<activated_PDP_type>", "OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
 
@@ -460,11 +564,11 @@ AT_SEND_UDP_MESSAGE_SEQUENCE = []
 
 TEMP_AT_MAKE_CONNECTION = [
 
-    at_read_pdp_context_status,
+    at_read_pdp_context_statuses,
     at_write_pdp_context_status_deactivate,
-    at_read_pdp_context_status,
+    at_read_pdp_context_statuses,
     at_write_pdp_context_status_activate,
-    at_read_pdp_context_status,
+    at_read_pdp_context_statuses,
 
     at_write_activate_pdn_ctx
 

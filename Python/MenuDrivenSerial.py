@@ -4,11 +4,10 @@ from PyInquirer import prompt
 from pyfiglet import Figlet
 import string
 import serial as serial
-import binascii
 
 import Config
 from AccessModeEnum import AccessMode
-from ArrayUtils import findParamInArray, findParamsInArray, findFirstActivePdpContextInParams, findParamInArrayByRow
+from ArrayUtils import findFirstActivePdpContextInParams, findParamInArrayByRow
 from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -16,7 +15,6 @@ from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 from Sender import Sender
-from SocketStatusEnum import SocketStatus
 
 NB_IOT_MAIN_MENU = 'nb_iot_main_menu'
 
@@ -83,113 +81,137 @@ class NbIoTSender:
         """
         '''
         + at_write_full_phone_functionality                     | AT+CFUN=1
-        + at_write_eps_status_codes (can be saved to device)    | AT+CEREG=5
+
         + at_write_turn_off_psm                                 | AT+CPSMS=0
         + at_write_enable_wakeup_indication                     | AT+QATWAKEUP=1
         + at_read_is_wakeup_indication_enabled                  | AT+QATWAKEUP?
-        
-        TODO?
-        Add AT+QLEDMODE Configure Network-status-indication Light
         '''
         self.executeAtCommandSequence(
             [
                 at_write_full_phone_functionality,
-                at_write_eps_status_codes,
+
                 at_write_turn_off_psm,  # TODO: TURN ON LATER!
                 at_write_enable_wakeup_indication,
                 at_read_is_wakeup_indication_enabled
             ])
         return self.wholeResponse
 
-    def _initForConnection(self) -> str:
+    def _networkRegistration(self) -> str:
         """
         Second step in initialization of the device
-        Initialize operator and activate
+        Network registration
+
         """
         '''
-        +at_execute_extended_signal_quality                 | AT+CESQ
-        +at_write_connection_status_enable_urc              | AT+CSCON=1
-        +at_write_operator_selection                        | AT+COPS=1,2,"21901"
-        +at_read_connection_status                          | AT+CSCON? (should be +CSCON: 1,1)
-        +at_read_operator_selection                         | AT+COPS?  (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
-        +at_write_attach_to_packet_domain_service           | AT+CGATT=1 (The state of PDP context activation, should be +CGATT: 1)
-        +at_read_signal_strength_level_and_bit_error_rate   | AT+CSQ
+        +at_read_operator_selection                             | AT+COPS?
+        +at_execute_extended_signal_quality                     | AT+CESQ 
+        +at_write_connection_status_enable_urc                  | AT+CSCON=1
+        +at_write_operator_selection                            | AT+COPS=1,2,"21901"
+        +at_read_operator_selection                             | AT+COPS?  (should be +COPS: 1,2,"21901",9 => 9 is E-UTRAN (NB-S1 mode))
+        + at_write_eps_status_codes (can be saved to device)    | AT+CEREG=5
+        + at_read_eps_status_codes                              | AT+CEREG?
+        +at_write_attach_to_packet_domain_service               | AT+CGATT=1 (The state of PDP context activation, should be +CGATT: 1)
+        +at_read_attach_to_packet_domain_service                | AT+CGATT? <state> 0 Detached, 1 Attached
+        +at_read_connection_status                              | AT+CSCON? (should be +CSCON: 1,1) (<n>=1=> Enable URC +CSCON: <mode>, <mode>=1=>Connected)
+        +at_read_signal_strength_level_and_bit_error_rate       | AT+CSQ (Reference values https://m2msupport.net/m2msupport/atcsq-signal-quality/)
         '''
         self.executeAtCommandSequence(
             [
+                at_read_operator_selection,
                 at_execute_extended_signal_quality,
                 at_write_connection_status_enable_urc,
                 at_write_operator_selection,
-                at_read_connection_status,
                 at_read_operator_selection,
+                at_write_eps_status_codes,
+                at_read_eps_status_codes,
                 at_write_attach_to_packet_domain_service,
+                at_read_attach_to_packet_domain_service,
+                at_read_connection_status,
                 at_read_signal_strength_level_and_bit_error_rate
+            ])
+
+        return self.wholeResponse
+
+    def _defineAndActivatePdpContext(self):
+        """
+        Third step in initialization of the device
+        Defining and activating PDP/PDN context
+
+        """
+        '''
+        Define PDP context
+        + at_write_create_pdp_context            | AT+CGDCONT=1,"IP","iot.ht.hr"
+        
+        Display all contexts
+        + at_read_pdp_contexts                   | AT+CGDCONT? >>RESPONSE:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0
+        
+        Check status of PDP profiles. Display context id <cid> and state <state>    
+        + at_read_pdp_context_statuses           | AT+CGACT? >>RESPONSE:+CGACT: 1,1,OK
+        
+        Activate PDP context
+        + at_write_activate_pdn_ctx              | AT+QGACT=1,1,"iot.ht.hr"
+        '''
+        self.executeAtCommandSequence(
+            [
+                at_write_create_pdp_context,
+                at_read_pdp_contexts,
+                at_read_pdp_context_statuses,
+                at_write_activate_pdn_ctx
             ])
 
         return self.wholeResponse
 
     def doInitialSetup(self) -> str:
         """
-        First step: initBasicFunctionalities(), Second step: initForConnection()
+        First step: _initBasicFunctionalities(), Second step: _networkRegistration(), Third step: _defineAndActivatePdpContext()
         Decide on AT_RESET_MODULE after setup
-        """
-        # TODO: ADD THIS:
-        """
-        /* Use AT+CSQ to query current signal quality  RSSI */
-            [2024-04-17 23:32:38:820_S:] AT+CSQ
-        /* Set band to 20*/
-             AT+QBAND=1,20
-             OR AT+QBAND=2,20,8
-             AT+QBAND?
         """
         self.resetWholeResponse()
 
         self._initBasicFunctionalities()
-        self._initForConnection()
+        self._networkRegistration()
+        self._defineAndActivatePdpContext()
 
         return self.wholeResponse
 
     def establishConnection(self) -> str:
         """
-        Set PDP context and activate PDN
-        """
-        """
         1. For BC66 and BC66-NA modules, AT+CGACT can only activate PDN connection, however, such
-            connection cannot be used to transmit or receive data. To transmit or receive data, see AT+QCACT
+            connection cannot be used to transmit or receive data. To transmit or receive data, see AT+QQACT
             for details of PDP context activation.
-            
-           ***** AT+QCACT NOT IN DOCUMENTATION ******
+
         """
         '''
-        | at_read_pdp_context_status                        | AT+CGACT?
+        | at_read_pdp_context_statuses                        | AT+CGACT?
         |---->>if status is active, deactivate:
         |-------- at_write_pdp_context_status_deactivate    | AT+CGACT=0,1
-        |-------- at_read_pdp_context_status                | AT+CGACT?
+        |-------- at_read_pdp_context_statuses                | AT+CGACT?
         |---->>else:
         |-------- at_write_pdp_context_status_activate      | AT+CGACT=1,<cid>
-        |-------- at_read_pdp_context_status                | AT+CGACT?
+        |-------- at_read_pdp_context_statuses                | AT+CGACT?
         |-------- at_write_activate_pdn_ctx                 | AT+QGACT=1,1,"iot.ht.hr"
         '''
         cid_in_active_state = "1"
 
         self.resetWholeResponse()
-        pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status, i=0)
+        pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses, i=0)
 
         if len(pdp_ctx_response.wanted) != 0:
-            # state = findParamsInArray("<state>", pdp_ctx_response.wanted)
-            # all_cid = [c_id for c_id in pdp_ctx_response.wanted if c_id.name == "<cid>"]
+            if not findFirstActivePdpContextInParams(pdp_ctx_response.wanted):
+                self._defineAndActivatePdpContext()
 
+            pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses, i=0)
             active_pdp_state_param = findFirstActivePdpContextInParams(pdp_ctx_response.wanted)
             active_pdp_cid_param = findParamInArrayByRow(
                 param="<cid>", arr=pdp_ctx_response.wanted, row=active_pdp_state_param.response_row)
 
             # deactivate PDP
-            self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=1)
-            self.executeAtCommand(at_read_pdp_context_status, i=2)
+            #self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=1)
+            #self.executeAtCommand(at_read_pdp_context_statuses, i=2)
 
             # activate PDP
             self.executeAtCommand(at_write_pdp_context_status_activate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=3)
-            self.executeAtCommand(at_read_pdp_context_status, i=4)
+            self.executeAtCommand(at_read_pdp_context_statuses, i=4)
 
             # activate PDN
             activate_pdn_context_result = self.executeAtCommand(at_write_activate_pdn_ctx, i=5)
