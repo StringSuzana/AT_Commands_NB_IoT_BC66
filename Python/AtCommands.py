@@ -59,6 +59,63 @@ at_read_signal_strength_level_and_bit_error_rate = AtCommand(
         AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
     ],
     max_wait_for_response=1)
+at_read_pdp_address = AtCommand(
+    command=AT_READ_SHOW_PDP_ADDRESS,
+    description="PDP IP address",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "OK"],
+            wanted=[Param(name="<cid>"),
+                    Param(name="<PDP_addr_1>"),
+                    Param(name="<PDP_addr_2>"),
+                    ]),
+        AtResponse(
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "OK"],
+            wanted=[Param(name="<cid>", response_row=0),
+                    Param(name="<PDP_addr_1>", response_row=0),
+                    Param(name="<PDP_addr_2>", response_row=0),
+                    Param(name="<cid>", response_row=1),
+                    Param(name="<PDP_addr_1>", response_row=1),
+                    Param(name="<PDP_addr_2>", response_row=1),
+                    ]),
+        AtResponse(
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+                                 "OK"],
+            wanted=[Param(name="<cid>", response_row=0),
+                    Param(name="<PDP_addr_1>", response_row=0),
+                    Param(name="<PDP_addr_2>", response_row=0),
+                    Param(name="<cid>", response_row=1),
+                    Param(name="<PDP_addr_1>", response_row=1),
+                    Param(name="<PDP_addr_2>", response_row=1),
+                    Param(name="<cid>", response_row=2),
+                    Param(name="<PDP_addr_1>", response_row=2),
+                    Param(name="<PDP_addr_2>", response_row=2),
+                    ]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
+        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+    ],
+    max_wait_for_response=1)
+
+at_read_ue_ip_address = AtCommand(
+    command=AT_READ_UE_IP_ADDRESS,
+    description="UE IP address",
+    read_response_method=Read.answerWithWantedParams,
+    expected_responses=
+    [
+        AtResponse(
+            Status.OK, response=["+QIPADDR:<IP_addr>", "OK"],
+            wanted=[Param(name="<IP_addr>")]),
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
+        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+    ],
+    max_wait_for_response=1)
 '''
 Basic Setup
 '''
@@ -305,7 +362,7 @@ at_reset = AtCommand(
 Enable PDP and connect to PDN sequence
 '''
 at_write_create_pdp_context = AtCommand(
-    command='AT+CGDCONT=1,"IP","iot.vip.hr"',#iot.ht.hr
+    command='AT+CGDCONT=1,"IP","iot.vip.hr"',  # iot.ht.hr
     description="Create new PDP context command [AT+CGDCONT=<cid>,<PDP_type>,<APN>]",
     long_description="",
     read_response_method=Read.answerWithWantedParams,
@@ -320,12 +377,13 @@ at_read_pdp_contexts = AtCommand(
     long_description="",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
-        AtResponse(Status.OK, response=[
-            "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
-            "OK"], wanted=[Param(name="<cid>", response_row=0),
-                           Param(name="<PDP_type>", response_row=0),
-                           Param(name="<APN>", response_row=0),
-                           Param(name="<PDP_addr>", response_row=0)]),
+        AtResponse(
+            Status.OK, response=[
+                "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",
+                "OK"], wanted=[Param(name="<cid>", response_row=0),
+                               Param(name="<PDP_type>", response_row=0),
+                               Param(name="<APN>", response_row=0),
+                               Param(name="<PDP_addr>", response_row=0)]),
         AtResponse(
             Status.OK, response=[
                 "+CGDCONT:<cid>,<PDP_type>,<APN>,<PDP_addr>,<d_comp>,<h_comp>,<IPv4_addr_alloc>,<request_type>,<P-CSCF_discovery>,<IM_CN_signaling_flag_ind>,<NSLPI>,<securePCO>,<IPv4_MTU_discovery>,<local_addr_ind>,<Non-IP_MTU_discovery>",

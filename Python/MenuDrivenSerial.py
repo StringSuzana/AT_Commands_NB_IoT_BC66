@@ -7,7 +7,8 @@ import serial as serial
 
 import Config
 from AccessModeEnum import AccessMode
-from ArrayUtils import findFirstActivePdpContextInParams, findParamInArrayByRow
+from ArrayUtils import findFirstActivePdpContextInParams, findParamInArrayByRow, findParamInArray, findParamInArrayByValue, \
+    findParamsInArray
 from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -151,13 +152,31 @@ class NbIoTSender:
         Activate PDP context
         + at_write_activate_pdn_ctx              | AT+QGACT=1,1,"iot.ht.hr"
         '''
-        self.executeAtCommandSequence(
-            [
-                at_write_create_pdp_context,
-                at_read_pdp_contexts,
-                at_read_pdp_context_statuses,
-                at_write_activate_pdn_ctx
-            ])
+        #:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0,OK || <cid> :  1,  <PDP_type> : "IP", <APN> : "iot.ht.hr"
+        all_pdp_contexts_response: AtResponse = self.executeAtCommand(at_read_pdp_contexts)
+        apn: Param = findParamInArrayByValue(param="<apn>", arr=all_pdp_contexts_response, param_value="iot.ht.hr")
+        cid: Param = findParamInArrayByRow(param="<cid>", arr=all_pdp_contexts_response, row=apn.response_row)
+
+        all_pdp_context_status_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses)  # +CGACT: 1,1,OK | <cid> <state>
+        param: Param = findParamInArrayByValue(param="<cid>", arr=all_pdp_context_status_response, param_value=cid.value)
+        status: Param = findParamInArrayByRow(param="<state>", arr=all_pdp_context_status_response, row=param.response_row)
+
+        if status == "1":
+            # everything is activated, skip activation
+            print(f"PDP context already activated. cid {cid.value}, apn {apn.value}, state {status.value}")
+            pass
+        else:
+            create_pdp_context_response: AtResponse = self.executeAtCommand(at_write_create_pdp_context)
+            if create_pdp_context_response.status == Status.ERROR.value:
+                print(f"Not able to create PDP context. Disabling all PDP contexts and resetting the device")
+                cids = findParamsInArray(param="<cid>", arr=all_pdp_context_status_response)
+                for i, cid_param in enumerate(cids):
+                    self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", cid_param.value), i=i)
+                    self.executeAtCommand(at_reset)
+
+            self.executeAtCommand(at_read_pdp_contexts)
+            self.executeAtCommand(at_read_pdp_context_statuses)
+            self.executeAtCommand(at_write_activate_pdn_ctx)
 
         return self.wholeResponse
 
@@ -171,53 +190,6 @@ class NbIoTSender:
         self._initBasicFunctionalities()
         self._networkRegistration()
         self._defineAndActivatePdpContext()
-
-        return self.wholeResponse
-
-    def establishConnection(self) -> str:
-        """
-        1. For BC66 and BC66-NA modules, AT+CGACT can only activate PDN connection, however, such
-            connection cannot be used to transmit or receive data. To transmit or receive data, see AT+QQACT
-            for details of PDP context activation.
-
-        """
-        '''
-        | at_read_pdp_context_statuses                        | AT+CGACT?
-        |---->>if status is active, deactivate:
-        |-------- at_write_pdp_context_status_deactivate    | AT+CGACT=0,1
-        |-------- at_read_pdp_context_statuses                | AT+CGACT?
-        |---->>else:
-        |-------- at_write_pdp_context_status_activate      | AT+CGACT=1,<cid>
-        |-------- at_read_pdp_context_statuses                | AT+CGACT?
-        |-------- at_write_activate_pdn_ctx                 | AT+QGACT=1,1,"iot.ht.hr"
-        '''
-        cid_in_active_state = "1"
-
-        self.resetWholeResponse()
-        pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses, i=0)
-
-        if len(pdp_ctx_response.wanted) != 0:
-            if not findFirstActivePdpContextInParams(pdp_ctx_response.wanted):
-                self._defineAndActivatePdpContext()
-
-            pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses, i=0)
-            active_pdp_state_param = findFirstActivePdpContextInParams(pdp_ctx_response.wanted)
-            active_pdp_cid_param = findParamInArrayByRow(
-                param="<cid>", arr=pdp_ctx_response.wanted, row=active_pdp_state_param.response_row)
-
-            # deactivate PDP
-            #self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=1)
-            #self.executeAtCommand(at_read_pdp_context_statuses, i=2)
-
-            # activate PDP
-            self.executeAtCommand(at_write_pdp_context_status_activate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=3)
-            self.executeAtCommand(at_read_pdp_context_statuses, i=4)
-
-            # activate PDN
-            activate_pdn_context_result = self.executeAtCommand(at_write_activate_pdn_ctx, i=5)
-
-            if activate_pdn_context_result.status == Status.ERROR:
-                print("Try connecting again")
 
         return self.wholeResponse
 
@@ -257,9 +229,9 @@ class NbIoTSender:
         return self.wholeResponse
 
     def readIpAddress(self) -> str:
-        # TODO
-        AT_READ_SHOW_PDP_ADDRESS = 'AT+CGPADDR?'  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
-        AT_READ_UE_IP_ADDRESS = 'AT+QIPADDR'  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
+
+        self.executeAtCommand(at_read_pdp_address)  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
+        self.executeAtCommand(at_read_ue_ip_address)  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
 
         pass
 
@@ -312,8 +284,8 @@ def main_menu():
                             '1. Print basic info to serial',
                             '2. Send basic test message to server',
                             '3. Send custom message to server',
-                            '4. Do initial setup. (If device is restarted)',
-                            '5. Do connection sequence to server',
+                            '4. Do initial setup. (_initBasicFunctionalities(), _networkRegistration(),and _defineAndActivatePdpContext())',
+                            '5. Read IP address',
                             '6. Reset device',
                             '7. Open socket',
                             '8. Close the program'
@@ -339,7 +311,8 @@ def main_menu():
         elif choice == '6':
             NbIoTSender().reset()
         elif choice == '5':
-            Write.toUniversalFile("".join(NbIoTSender().establishConnection()))
+            Write.toUniversalFile("".join(NbIoTSender().readIpAddress()))
+            pass
         elif choice == '4':
             Write.toUniversalFile("".join(NbIoTSender().doInitialSetup()))
         elif choice == '3':

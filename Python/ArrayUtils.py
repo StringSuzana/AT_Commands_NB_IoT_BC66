@@ -18,13 +18,21 @@ def findParamInArray(param: str, arr: []) -> Param:
     res = next(filter(lambda p: p.name == param, arr))
     return res
 
+
 def findParamInArrayByRow(param: str, arr: [Param], row: int) -> Param:
     res = next(filter(lambda p: (p.name == param and p.response_row == row), arr))
     return res
 
+
+def findParamInArrayByValue(param: str, arr: [Param], param_value: str):
+    res = next(filter(lambda p: (p.name == param and p.value == param_value), arr))
+    return res
+
+
 def findParamsInArray(param: str, arr: []):
     res = filter(lambda p: p.name == param, arr)
     return list(res)
+
 
 def findFirstActivePdpContextInParams(wanted_params: [Param]) -> Param:
     for param in wanted_params:
