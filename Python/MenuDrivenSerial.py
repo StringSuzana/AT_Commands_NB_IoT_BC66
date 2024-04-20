@@ -154,12 +154,12 @@ class NbIoTSender:
         '''
         #:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0,OK || <cid> :  1,  <PDP_type> : "IP", <APN> : "iot.ht.hr"
         all_pdp_contexts_response: AtResponse = self.executeAtCommand(at_read_pdp_contexts)
-        apn: Param = findParamInArrayByValue(param="<apn>", arr=all_pdp_contexts_response, param_value="iot.ht.hr")
-        cid: Param = findParamInArrayByRow(param="<cid>", arr=all_pdp_contexts_response, row=apn.response_row)
+        apn: Param = findParamInArrayByValue(param="<APN>", arr=all_pdp_contexts_response.wanted, param_value='iot.ht.hr')
+        cid: Param = findParamInArrayByRow(param="<cid>", arr=all_pdp_contexts_response.wanted, row=apn.response_row)
 
         all_pdp_context_status_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses)  # +CGACT: 1,1,OK | <cid> <state>
-        param: Param = findParamInArrayByValue(param="<cid>", arr=all_pdp_context_status_response, param_value=cid.value)
-        status: Param = findParamInArrayByRow(param="<state>", arr=all_pdp_context_status_response, row=param.response_row)
+        param: Param = findParamInArrayByValue(param="<cid>", arr=all_pdp_context_status_response.wanted, param_value=cid.value)
+        status: Param = findParamInArrayByRow(param="<state>", arr=all_pdp_context_status_response.wanted, row=param.response_row)
 
         if status == "1":
             # everything is activated, skip activation

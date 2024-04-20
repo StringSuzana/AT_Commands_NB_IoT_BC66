@@ -1,3 +1,5 @@
+from typing import List
+
 from AtResponse import Param
 import re
 
@@ -19,14 +21,15 @@ def findParamInArray(param: str, arr: []) -> Param:
     return res
 
 
-def findParamInArrayByRow(param: str, arr: [Param], row: int) -> Param:
+def findParamInArrayByRow(param: str, arr: List[Param], row: int) -> Param:
     res = next(filter(lambda p: (p.name == param and p.response_row == row), arr))
     return res
 
 
-def findParamInArrayByValue(param: str, arr: [Param], param_value: str):
-    res = next(filter(lambda p: (p.name == param and p.value == param_value), arr))
+def findParamInArrayByValue(param: str, arr: List[Param], param_value: str): #todo: fix
+    res = next(filter(lambda p: p.name == param and p.value == param_value, arr))
     return res
+
 
 
 def findParamsInArray(param: str, arr: []):
@@ -34,7 +37,7 @@ def findParamsInArray(param: str, arr: []):
     return list(res)
 
 
-def findFirstActivePdpContextInParams(wanted_params: [Param]) -> Param:
+def findFirstActivePdpContextInParams(wanted_params: List[Param]) -> Param:
     for param in wanted_params:
         if param.name == "<state>" and param.value == "1":
             return param
