@@ -8,7 +8,7 @@ import binascii
 
 import Config
 from AccessModeEnum import AccessMode
-from ArrayUtils import findParamInArray
+from ArrayUtils import findParamInArray, findParamsInArray, findFirstActivePdpContextInParams, findParamInArrayByRow
 from AtCommands import *
 from AtResponse import AtResponse
 from AtResponseReader import Read
@@ -46,8 +46,9 @@ class NbIoTSender:
     def getNbIotModuleInfo(self) -> str:
         response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
         return response
+
     def setVerboseErrors(self):
-        #TODO: Setup AtCommands so that they can read <err> from +CME ERROR:<err>
+        # TODO: Setup AtCommands so that they can read <err> from +CME ERROR:<err>
         # Maybe add that as a default to AtCommand to avoid code duplication?
         self.executeAtCommand(at_write_enable_verbose_errors)
         return self.wholeResponse
@@ -70,7 +71,6 @@ class NbIoTSender:
 
     def _checkLastErrorMessage(self):
         error_message = self.executeAtCommand(at_read_last_error_code)
-
 
     def sendTestMessageToServer(self):
         """get parameters from Nb Iot"""
@@ -95,7 +95,7 @@ class NbIoTSender:
             [
                 at_write_full_phone_functionality,
                 at_write_eps_status_codes,
-                at_write_turn_off_psm, #TODO: TURN ON LATER!
+                at_write_turn_off_psm,  # TODO: TURN ON LATER!
                 at_write_enable_wakeup_indication,
                 at_read_is_wakeup_indication_enabled
             ])
@@ -139,6 +139,7 @@ class NbIoTSender:
             [2024-04-17 23:32:38:820_S:] AT+CSQ
         /* Set band to 20*/
              AT+QBAND=1,20
+             OR AT+QBAND=2,20,8
              AT+QBAND?
         """
         self.resetWholeResponse()
@@ -175,16 +176,24 @@ class NbIoTSender:
         pdp_ctx_response: AtResponse = self.executeAtCommand(at_read_pdp_context_status, i=0)
 
         if len(pdp_ctx_response.wanted) != 0:
-            cid = findParamInArray("<cid>", pdp_ctx_response.wanted)
-            state = findParamInArray("<state>", pdp_ctx_response.wanted)
-            all_cid = [c_id for c_id in pdp_ctx_response.wanted if cid.value == "<cid>"]
-            if state.value == cid_in_active_state:
-                self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", cid.value), i=1)
-                self.executeAtCommand(at_read_pdp_context_status, i=2)
+            # state = findParamsInArray("<state>", pdp_ctx_response.wanted)
+            # all_cid = [c_id for c_id in pdp_ctx_response.wanted if c_id.name == "<cid>"]
 
-            self.executeAtCommand(at_write_pdp_context_status_activate.replaceParamInCommand("<cid>", cid.value), i=3)
+            active_pdp_state_param = findFirstActivePdpContextInParams(pdp_ctx_response.wanted)
+            active_pdp_cid_param = findParamInArrayByRow(
+                param="<cid>", arr=pdp_ctx_response.wanted, row=active_pdp_state_param.response_row)
+
+            # deactivate PDP
+            self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=1)
+            self.executeAtCommand(at_read_pdp_context_status, i=2)
+
+            # activate PDP
+            self.executeAtCommand(at_write_pdp_context_status_activate.replaceParamInCommand("<cid>", active_pdp_cid_param.value), i=3)
             self.executeAtCommand(at_read_pdp_context_status, i=4)
+
+            # activate PDN
             activate_pdn_context_result = self.executeAtCommand(at_write_activate_pdn_ctx, i=5)
+
             if activate_pdn_context_result.status == Status.ERROR:
                 print("Try connecting again")
 
@@ -267,6 +276,7 @@ class NbIoTSender:
         print(whole_response)
         return whole_response
 
+
 def main_menu():
     while True:
         custom_fig = Figlet(font='ogre')  # larry3d #ogre
@@ -324,3 +334,6 @@ def main_menu():
 if __name__ == '__main__':
     SerialCommunication.open()
     main_menu()
+
+    # TODO: citanje asinkronih poruka
+    # frekvencija slanja i frekvencija čitanja, apn...

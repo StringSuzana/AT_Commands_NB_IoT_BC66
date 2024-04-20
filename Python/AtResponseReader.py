@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from ArrayUtils import findIndex
+from ArrayUtils import containsStatus
 from AtCommand import AtCommand
 from AtResponse import AtResponse, Param
 from ResponseStatusEnum import Status
@@ -51,42 +52,30 @@ class Read:
         if len(response_array) == 0:
             return
 
-        for expected_response in at_command_obj.expected_responses:
-            if self.checkIfMessageIsWhole(for_status=expected_response.status, expected=expected_response.response, given=response_array):
-                self.at_expected_response = expected_response
+        for expected in at_command_obj.expected_responses:
+            if self.checkIfMessageIsWhole(for_status=expected.status, expected_answer=expected.response, received_answer=response_array):
+                self.setResponseAndStatus(for_status=expected.status, expected_answer=expected.response, received_answer=response_array)
+                self.at_expected_response = expected
                 return
         self.at_status = Status.WAITING
         return
 
-    def checkIfMessageIsWhole(self, for_status, expected, given) -> bool:
-        # Check if the arrays have the same length
-        if len(expected) != len(given):
-            return False
-        at_response_temp = []
-        # Check if the elements of the arrays are the same
-        for i in range(len(expected)):
-            if expected[i] == given[i]:
-                at_response_temp.append(given[i])
-                continue
-            else:
-                if ":" in expected[i]:
-                    # Check if the elements are both strings that start with "+Q_SOMETHING:"
-                    if given[i].startswith(expected[i][:expected[i].index(":")]):
-                        at_response_temp.append(given[i])
-                        continue
-                    # If the elements are not similar, return False
-                    else:
-                        return False
-                # If this is not a row with +QAT: response, return False
-                else:
-                    return False
+    def checkIfMessageIsWhole(self, for_status, expected_answer, received_answer) -> bool:
+        if self.checkIfUrcIsPresent(for_status, expected_answer, received_answer):
+            # remove from received_answer and print out urc
+            pass
 
-        if not at_response_temp:
-            self.at_response = [Status.ERROR.name]
-        else:
-            self.at_response = at_response_temp
+        if len(expected_answer) == len(received_answer):
+            if containsStatus(for_status.name, received_answer) & self.isValidAnswerForGivenCommand(
+                    for_status, expected_answer, received_answer):
+                return True
 
-        self.at_status = for_status
+        return False
+
+    def checkIfUrcIsPresent(self, for_status, expected, received):
+        return True
+
+    def isValidAnswerForGivenCommand(self, for_status, expected_answer, received_answer):
         return True
 
     '''
@@ -116,7 +105,7 @@ class Read:
             # print(f"There is no wanted parameters")
             return AtResponse(status=result_status, response=result_array, wanted=[])
         else:
-            #print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
+            # print(f"AT STATUS: {result_status}\nRESPONSE: {result_array}")
             wanted_params = []
 
             for wanted in at_expected_response.wanted:
@@ -135,3 +124,36 @@ class Read:
     def getResponseRowFrom_Array(arr: list[str], row: int):
         response_row = arr[row].replace(':', ',').split(',')
         return response_row
+
+    def setResponseAndStatus(self, for_status, expected_answer, received_answer):
+        at_response_temp = []
+
+        for response_row in range(len(expected_answer)):
+            # if for example expected_answer response is OK and received_answer response is OK
+            if expected_answer[response_row] == received_answer[response_row]:
+                at_response_temp.append(received_answer[response_row])
+                continue
+            else:
+                # This is for the case that expected_answer +ATCOMMAND: has parameters
+                if ":" in expected_answer[response_row]:
+                    # Check if the elements are both strings that start with "+ATCOMMAND:"
+                    command_name_end_index = expected_answer[response_row].index(":")
+                    response_command_name = expected_answer[response_row][:command_name_end_index]
+
+                    if received_answer[response_row].startswith(response_command_name):
+                        at_response_temp.append(received_answer[response_row])
+                        continue
+        #                   # If the elements are not similar, return False
+        #                   else:
+        #                       return False
+        #               # If this is not a row with +ATCOMMAND:<response>, return False
+        #               else:
+        #                   return False
+
+        if not at_response_temp:
+            self.at_response = [Status.ERROR.name]
+        else:
+            self.at_response = at_response_temp
+
+        self.at_status = for_status
+#       return True

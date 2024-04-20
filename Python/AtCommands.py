@@ -47,7 +47,7 @@ at_read_power_supply_voltage = AtCommand(
     max_wait_for_response=1)
 at_read_signal_strength_level_and_bit_error_rate = AtCommand(
     command='AT+CSQ',
-    description="This Execution Command returns the received signal strength level <rssi> "
+    description="This Execution Command returns the received_answer signal strength level <rssi> "
                 "and the channel bit error rate <ber> from the MT.",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=
@@ -181,7 +181,7 @@ at_write_operator_selection = AtCommand(
 
 at_execute_extended_signal_quality = AtCommand(
     command=AT_EXECUTE_EXTENDED_SIGNAL_QUALITY,
-    description="This Execution Command returns received signal quality parameters.",
+    description="This Execution Command returns received_answer signal quality parameters.",
     long_description="The terminal will provide a current signal strength indicator of 0 to 99,"
                      " where a larger number indicates better signal quality."
                      "*** <rscp> and <ecno> are not applicable for NB-IoT network and should be set to "
@@ -189,7 +189,7 @@ at_execute_extended_signal_quality = AtCommand(
                      "*** the network quality can be evaluated according to a general rule as specified: "
                      "Strong: RSRP ≥ -100 dBm and RSRQ ≥ -7 dB. "
                      "Median: -100 dbm ≥ RSRP ≥ -110 dbm, and RSRQ ≥ -11 dB."
-                     "<rsrp> Integer type. Reference signal received power (RSRP, see 3GPP 36.133). "
+                     "<rsrp> Integer type. Reference signal received_answer power (RSRP, see 3GPP 36.133). "
                      "When sending data is needed, RSRP is recommended to be greater than -115 dbm.",
     read_response_method=Read.answer,
     expected_responses=[
@@ -224,7 +224,9 @@ at_read_operator_selection = AtCommand(
     read_response_method=Read.answerWithWantedParams,
     expected_responses=
     [
-        AtResponse(Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"], wanted=[]),
+        AtResponse(
+            Status.OK, response=["+COPS:<mode>,<format>,<oper>,<AcT>", "OK"],
+            wanted=[Param(name="<mode>"), Param(name="<format>"), Param(name="<oper>"), Param(name="<AcT>")]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=900)
@@ -269,6 +271,15 @@ at_read_pdp_context_status = AtCommand(
                     Param(name="<state>", response_row=0),
                     Param(name="<cid>", response_row=1),
                     Param(name="<state>", response_row=1)]),
+        AtResponse(
+            Status.OK, response=["+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "OK"],
+            wanted=[Param(name="<cid>", response_row=0),
+                    Param(name="<state>", response_row=0),
+                    Param(name="<cid>", response_row=1),
+                    Param(name="<state>", response_row=1),
+                    Param(name="<cid>", response_row=2),
+                    Param(name="<state>", response_row=2)
+                    ]),
         AtResponse(Status.OK, response=["NO CARRIER"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=150)
@@ -285,7 +296,7 @@ at_write_pdp_context_status_deactivate = AtCommand(
 
 at_write_pdp_context_status_activate = AtCommand(
     command="AT+CGACT=1,<cid>",
-    description="Activate PDN",
+    description="Activate PDP",
     long_description="AT+CGACT=<state>,<cid> state=1=activate",
     read_response_method=Read.answer,
     expected_responses=[
