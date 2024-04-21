@@ -73,9 +73,11 @@ class Read:
         return False
 
     def checkIfUrcIsPresent(self, for_status, expected, received):
+        #TODO
         return True
 
     def isValidAnswerForGivenCommand(self, for_status, expected_answer, received_answer):
+        #TODO
         return True
 
     '''
@@ -115,13 +117,7 @@ class Read:
 
                 param_index = findIndex(arr=expected_row, element=wanted.name)
                 if param_index != -1:
-                    if result_status == Status.ERROR:
-                        command_name_end_index = response_row[param_index].index(":")
-                        response_command_name = response_row[param_index][:command_name_end_index]
-                        if response_command_name.startswith("+CME"):
-                            res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
-                    else:
-                        res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
+                    res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
                     wanted_params.append(res)
 
             return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
@@ -139,6 +135,8 @@ class Read:
             if expected_answer[row] == received_answer[row]:
                 at_response_temp.append(received_answer[row])
                 continue
+            elif received_answer[row].startswith("+CME"):
+                at_response_temp.append(received_answer[row])
             else:
                 # This is for the case that expected_answer +ATCOMMAND: has parameters
                 if ":" in expected_answer[row]:

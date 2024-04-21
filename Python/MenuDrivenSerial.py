@@ -44,37 +44,26 @@ class NbIoTSender:
     def resetWholeResponse(self):
         self.wholeResponse = ''
 
-    def getNbIotModuleInfo(self) -> str:
-        response = self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
-        return response
-
     def setVerboseErrors(self):
         self.executeAtCommand(at_write_enable_verbose_errors)
         return self.wholeResponse
 
-    def sendMessageToServer(self, message_text: str) -> str:
+    def getNbIotModuleInfo(self) -> str:
+        self.executeAtCommandSequence(AT_BASIC_INFO_SEQUENCE)
+        return self.wholeResponse
+
+    def doInitialSetup(self) -> str:
         """
-        Send custom message to server
-        AT+QISENDEX=0,<send_length>,<hex_string>
+        First step: _initBasicFunctionalities(), Second step: _networkRegistration(), Third step: _defineAndActivatePdpContext()
+        Decide on AT_RESET_MODULE after setup
         """
         self.resetWholeResponse()
 
-        message_hex = message_text.encode('utf-8').hex()
-        send_length = len(message_text.encode('utf-8'))
+        self._initBasicFunctionalities()
+        self._networkRegistration()
+        self.defineAndActivatePdpContext()
 
-        at_send_hex_command = at_send_hex.replaceParamInCommand('<send_length>', str(send_length))
-        at_send_hex_command = at_send_hex_command.replaceParamInCommand('<hex_string>', message_hex)
-        self.executeAtCommand(at_send_hex_command)
-        # self.executeAtCommand(at_read_last_error_code)
         return self.wholeResponse
-
-    def _checkLastErrorMessage(self):
-        error_message = self.executeAtCommand(at_read_last_error_code)
-
-    def sendTestMessageToServer(self):
-        """get parameters from Nb Iot"""
-        basic_info = self.getNbIotModuleInfo()
-        self.sendMessageToServer(basic_info)
 
     def _initBasicFunctionalities(self) -> str:
         """
@@ -187,25 +176,38 @@ class NbIoTSender:
 
         return self.wholeResponse
 
-    def doInitialSetup(self) -> str:
-        """
-        First step: _initBasicFunctionalities(), Second step: _networkRegistration(), Third step: _defineAndActivatePdpContext()
-        Decide on AT_RESET_MODULE after setup
-        """
-        self.resetWholeResponse()
-
-        self._initBasicFunctionalities()
-        self._networkRegistration()
-        self.defineAndActivatePdpContext()
-
-        return self.wholeResponse
-
-    def sendMessage(self) -> str:
+    def sendTestMessage(self) -> str:
         self.resetWholeResponse()
         self.executeAtCommand(at_send_hex_test)
         return self.wholeResponse
 
-    def reopenSocket(self) -> str:
+    def sendMessageToServer(self, message_text: str) -> str:
+        """
+        Send custom message to server
+        AT+QISENDEX=0,<send_length>,<hex_string>
+        """
+        self.resetWholeResponse()
+
+        message_hex = message_text.encode('utf-8').hex()
+        send_length = len(message_text.encode('utf-8'))
+
+        at_send_hex_command = at_send_hex.replaceParamInCommand('<send_length>', str(send_length))
+        at_send_hex_command = at_send_hex_command.replaceParamInCommand('<hex_string>', message_hex)
+        self.executeAtCommand(at_send_hex_command)
+        # self.executeAtCommand(at_read_last_error_code)
+        return self.wholeResponse
+
+    def _checkLastErrorMessage(self):
+        error_message = self.executeAtCommand(at_read_last_error_code)
+
+    def readIpAddress(self):
+        self.resetWholeResponse()
+
+        self.executeAtCommand(at_read_pdp_address)  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
+        self.executeAtCommand(at_read_ue_ip_address)  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
+        return self.wholeResponse
+
+    def openSocket(self) -> str:
         """
         Open UDP socket
         """
@@ -220,7 +222,7 @@ class NbIoTSender:
         socket_status_response: AtResponse = self.executeAtCommand(
             at_read_socket_status.replaceParamInCommand("<contextID>", self.context_id))
         socket_state = findParamInArray("<socket_state>", socket_status_response.wanted)
-        if socket_state.value == SocketStatus.CONNECTED:
+        if socket_state.value == str(SocketStatus.CONNECTED.value):
             print(f"Socket connected for contextID {self.context_id}")
         else:
             # self.executeAtCommand(at_close_socket) #here is specified connectID
@@ -236,9 +238,24 @@ class NbIoTSender:
 
         return self.wholeResponse
 
-    def readIpAddress(self):
-        self.executeAtCommand(at_read_pdp_address)  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
-        self.executeAtCommand(at_read_ue_ip_address)  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
+    def closeSocket(self):
+        self.resetWholeResponse()
+        self.executeAtCommand(at_close_socket) #here is specified connectID assumption that it is 0
+        time.sleep(2)
+        return self.wholeResponse
+
+    def testCmeError(self):
+        wrong_apn = AtCommand(
+            command='AT+CGDCONT=1,"IP","iot.ht.wrong"',
+            description="Test CME with wrong command",
+            long_description="",
+            read_response_method=Read.answerWithWantedParams,
+            expected_responses=[
+                AtResponse(Status.OK, response=["OK"], wanted=[]),
+                AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
+            max_wait_for_response=1)
+        self.executeAtCommand(wrong_apn, 0)
+        return self.wholeResponse
 
     @staticmethod
     def resetDevice():
@@ -279,6 +296,7 @@ class NbIoTSender:
         return whole_response
 
 
+
 def main_menu():
     while True:
         custom_fig = Figlet(font='ogre')  # larry3d #ogre
@@ -288,18 +306,19 @@ def main_menu():
                 'type': 'list',
                 'name': NB_IOT_MAIN_MENU,
                 'message': 'Select what you want to do:',
-                'choices': ['0. Enable verbose error codes',
-                            '1. Print basic info to serial',
-                            '2. Send basic test message to server',
-                            '3. Send custom message to server',
-                            '4. Do initial setup. (_initBasicFunctionalities(), _networkRegistration(),and _defineAndActivatePdpContext())',
-                            '5. Read IP address',
-                            '6. Reset device',
-                            '7. Open socket',
-                            '8. Define And Activate Pdp Context',
-                            '9. Close the program'
+                'choices': ['0  |Enable verbose error codes',
+                            '1  |Print basic info to serial',
+                            '2  |Send basic test message to server',
+                            '3  |Send custom message to server',
+                            '4  |Do initial setup. (_initBasicFunctionalities(), _networkRegistration(),and _defineAndActivatePdpContext())',
+                            '5  |ONLY defineAndActivatePdpContext()',
+                            '6  |Read IP address',
+                            '7  |Open socket',
+                            '8  |Close socket',
+                            '9  |Reset device',
+                            '10  |Close the program'
                             ],
-                'filter': lambda val: val[0:1:]  # I want just the number
+                'filter': lambda val: val[0:2:]  # I want just the number
             },
             {
                 'type': 'input',
@@ -310,26 +329,28 @@ def main_menu():
             }
         ]
         answers = prompt(questions, style=MenuStyle.basic)
-        choice = answers.get(NB_IOT_MAIN_MENU)
+        choice: str = (answers.get(NB_IOT_MAIN_MENU)).replace(" ", "")
         print(answers)
-        if choice == '9':
+        if choice == '10':
             print("Exiting the menu.")
             break
-        elif choice == '8':
-            Write.toUniversalFile("".join(NbIoTSender().defineAndActivatePdpContext()))
-        elif choice == '7':
-            Write.toUniversalFile("".join(NbIoTSender().reopenSocket()))
-        elif choice == '6':
+        elif choice == '9':
             NbIoTSender().resetDevice()
-        elif choice == '5':
+        elif choice == '8':
+            Write.toUniversalFile("".join(NbIoTSender().closeSocket()))
+        elif choice == '7':
+            Write.toUniversalFile("".join(NbIoTSender().openSocket()))
+        elif choice == '6':
             Write.toUniversalFile("".join(NbIoTSender().readIpAddress()))
+        elif choice == '5':
+            Write.toUniversalFile("".join(NbIoTSender().defineAndActivatePdpContext()))
         elif choice == '4':
             Write.toUniversalFile("".join(NbIoTSender().doInitialSetup()))
         elif choice == '3':
             message_text = answers.get('message_text')
             Write.toUniversalFile("".join(NbIoTSender().sendMessageToServer(message_text)))
         elif choice == '2':
-            Write.toUniversalFile("".join(NbIoTSender().sendMessage()))
+            Write.toUniversalFile("".join(NbIoTSender().sendTestMessage()))
         elif choice == '1':
             Write.toUniversalFile("".join(NbIoTSender().getNbIotModuleInfo()))
         elif choice == '0':

@@ -21,4 +21,4 @@ class AtCommand:
         return self
     def __post_init__(self):
         #add this to each command
-        self.expected_responses.append(AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")]))
+        self.expected_responses.append(AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[]))
