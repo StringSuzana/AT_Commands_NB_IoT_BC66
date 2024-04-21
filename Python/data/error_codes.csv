@@ -1,0 +1,58 @@
+3,Operation not allowed
+4,Operation not supported
+10,USIM not inserted
+13,USIM failure
+14,USIM busy
+20,USIM memory full
+23,Memory failure
+24,Text string too long
+25,Invalid characters in text string
+30, No network service
+31, Network timeout
+32, Network not allowed - emergency calls only
+50, Incorrect parameters
+100, Unknown
+107, PSD services not allowed
+111, PLMN not allowed
+112, Location area not allowed
+113, Roaming not allowed in this location area
+132, Service option not supported
+133, Requested service option not subscribed
+149, PDP authentication failure
+584, Combined service not allowed
+588, Feature not supported
+591, Implicitly detached
+592, Insufficient resources
+596, Invalid <cid> value
+598, Mode value not in range
+606, Low layer failure
+607, Missing or unknown failure
+615, Network failure
+630, Profile (<cid>) not defined
+631, Unspecified protocol error
+639, Service type not yet available
+675, PDN type IPv4 only allowed
+676, PDN type IPv6 only allowed
+692, EPS service not allowed
+695, EPS tracking area not allowed
+696, Roaming not allowed in TA
+697, Roaming not allowed in PLMN
+698, Not suitable cells in TA
+700, ESM failure
+703, Congestion
+704, UE security capability mismatch
+705, Security mode rejected
+709, No EPS bearer context activated
+765, Invalid input value
+766, Unsupported value or mode
+767, Operation failed
+769, Unable to get control of required module
+770, USIM Invalid – network reject
+772, USIM powered down
+840, No service state
+841, In cell search state
+842, ERRC is deactivated
+843, In cell-reselection state
+845, In re-establishment state
+846, In PSM state
+847, No data transfer in idle state

@@ -16,6 +16,7 @@ from Config import Server
 from LogWriter import Write
 from Menu import MessageValidator, MenuStyle
 from Sender import Sender
+from SocketStatusEnum import SocketStatus
 
 NB_IOT_MAIN_MENU = 'nb_iot_main_menu'
 
@@ -37,6 +38,7 @@ class NbIoTSender:
         self.serverIpAddress = Server.IP_ADDR
         self.serverPort = Server.PORT
         self.protocol = Server.UDP
+        self.context_id = "1"
         self.wholeResponse = ''
 
     def resetWholeResponse(self):
@@ -47,8 +49,6 @@ class NbIoTSender:
         return response
 
     def setVerboseErrors(self):
-        # TODO: Setup AtCommands so that they can read <err> from +CME ERROR:<err>
-        # Maybe add that as a default to AtCommand to avoid code duplication?
         self.executeAtCommand(at_write_enable_verbose_errors)
         return self.wholeResponse
 
@@ -140,8 +140,10 @@ class NbIoTSender:
 
         """
         '''
+        at_read_pdp_contexts                     | AT+CGDCONT?                      
+        
         Define PDP context
-        + at_write_create_pdp_context            | AT+CGDCONT=1,"IP","iot.ht.hr"
+        + at_write_create_pdp_context_set_apn            | AT+CGDCONT=1,"IP","iot.ht.hr"
         
         Display all contexts
         + at_read_pdp_contexts                   | AT+CGDCONT? >>RESPONSE:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0
@@ -154,6 +156,10 @@ class NbIoTSender:
         '''
         #:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0,OK || <cid> :  1,  <PDP_type> : "IP", <APN> : "iot.ht.hr"
         all_pdp_contexts_response: AtResponse = self.executeAtCommand(at_read_pdp_contexts)
+        if all_pdp_contexts_response.status == Status.ERROR:
+            print("Error reading PDP contexts. EXIT")
+            return
+
         apn: Param = findParamInArrayByValue(param_name="<APN>", arr=all_pdp_contexts_response.wanted, param_value='iot.ht.hr')
         cid: Param = findParamInArrayByRow(param="<cid>", arr=all_pdp_contexts_response.wanted, row=apn.response_row)
 
@@ -162,17 +168,18 @@ class NbIoTSender:
         status: Param = findParamInArrayByRow(param="<state>", arr=all_pdp_context_status_response.wanted, row=param.response_row)
 
         if status.value == "1":
-            # everything is activated, skip activation
-            print(f"PDP context already activated. cid {cid.value}, apn {apn.value}, state {status.value}")
+            self.context_id = cid.value
+            self.wholeResponse += f"|>>|...PDP context already activated, skipping pdp creation and activation. cid {cid.value}, apn {apn.value}, state {status.value}"
             pass
         else:
-            create_pdp_context_response: AtResponse = self.executeAtCommand(at_write_create_pdp_context)
-            if create_pdp_context_response.status == Status.ERROR.value:
-                print(f"Not able to create PDP context. Disabling all PDP contexts and resetting the device")
-                cids = findParamsInArray(param="<cid>", arr=all_pdp_context_status_response)
+            create_pdp_context_response: AtResponse = self.executeAtCommand(at_write_create_pdp_context_set_apn)
+            if create_pdp_context_response.status == Status.ERROR:
+                self.wholeResponse += f"|>>|...Not able to create PDP context. Disabling all PDP contexts and resetting the device. All inactive PDP contexts will be deleted after reset."
+                cids = findParamsInArray(param="<cid>", arr=all_pdp_context_status_response.wanted)
                 for i, cid_param in enumerate(cids):
                     self.executeAtCommand(at_write_pdp_context_status_deactivate.replaceParamInCommand("<cid>", cid_param.value), i=i)
-                    self.executeAtCommand(at_reset)
+                    self.executeAtCommandWithoutRead(at_reset)
+                    return
 
             self.executeAtCommand(at_read_pdp_contexts)
             self.executeAtCommand(at_read_pdp_context_statuses)
@@ -203,44 +210,41 @@ class NbIoTSender:
         Open UDP socket
         """
         '''
-        at_read_socket_status       | AT+QISTATE=1,0
+        at_read_socket_status       | AT+QISTATE=0,<contextID>
             if opened
-                at_close_socket     | AT+QICLOSE=0
+                ok
             else
                 at_open_socket      | AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,4444,<access_mode>,0
         '''
         self.resetWholeResponse()
-        self.executeAtCommand(at_close_socket)
-        time.sleep(2)
-        self.executeAtCommand(at_read_socket_status)
-        # connectID = findParamInArray("<connectID>", socket_status_response.wanted)
-        # socket_state = findParamInArray("<socket_state>", socket_status_response.wanted)
-        # if connectID.value == SocketStatus.CONNECTING | connectID.value == SocketStatus.CONNECTED:
-        # socket_close_response = self.executeAtCommand(at_close_socket)
-
-        at_open_socket_command = at_open_socket.replaceParamInCommand("<IP_address>", Config.Server.IP_ADDR)
-        at_open_socket_command = at_open_socket_command.replaceParamInCommand("<remote_port>", Config.Server.PORT)
-        at_open_socket_command = at_open_socket_command.replaceParamInCommand("<access_mode>", str(AccessMode.DIRECT_PUSH.value))
-        socket_open_response = self.executeAtCommand(at_open_socket_command)
+        socket_status_response: AtResponse = self.executeAtCommand(
+            at_read_socket_status.replaceParamInCommand("<contextID>", self.context_id))
+        socket_state = findParamInArray("<socket_state>", socket_status_response.wanted)
+        if socket_state.value == SocketStatus.CONNECTED:
+            print(f"Socket connected for contextID {self.context_id}")
+        else:
+            # self.executeAtCommand(at_close_socket) #here is specified connectID
+            # time.sleep(2)
+            at_open_socket_command = at_open_socket.replaceParamInCommand("<IP_address>", Config.Server.IP_ADDR)
+            at_open_socket_command = at_open_socket_command.replaceParamInCommand("<remote_port>", Config.Server.PORT)
+            at_open_socket_command = at_open_socket_command.replaceParamInCommand("<access_mode>", str(AccessMode.DIRECT_PUSH.value))
+            at_open_socket_command = at_open_socket_command.replaceParamInCommand("<contextID>", self.context_id)
+            socket_open_response = self.executeAtCommand(at_open_socket_command)
 
         time.sleep(5)
         self.executeAtCommand(at_read_socket_status)
 
         return self.wholeResponse
 
-    def readIpAddress(self) -> str:
-
+    def readIpAddress(self):
         self.executeAtCommand(at_read_pdp_address)  # Read the Ip address. RESPONSE: +CGPADDR: 1,10.157.140.5
         self.executeAtCommand(at_read_ue_ip_address)  # Read Ip of a DEVICE +QIPADDR: 10.152.26.119 +QIPADDR: 127.0.0.1
 
-        pass
-
-    def reset(self):
+    @staticmethod
+    def resetDevice():
         Sender().sendAtCommand(ser=ser, command=at_reset.command)
 
     def executeAtCommand(self, at: AtCommand, i: int = 0):
-        cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-        #print(cmd_and_descr)  # this is only if I want to find out which is the last command that the program was stuck on
         Sender().sendAtCommand(ser=ser, command=at.command)
         at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
         self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
@@ -250,8 +254,14 @@ class NbIoTSender:
         for i, at in enumerate(sequence):
             self.executeAtCommand(at, i)
 
+    @staticmethod
+    def executeAtCommandWithoutRead(at: AtCommand, i: int = 0):
+        cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
+        print(cmd_and_descr)
+        Sender().sendAtCommand(ser=ser, command=at.command)
 
-    def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
+    @staticmethod
+    def makeTextFromResponse(at_command, at_response: AtResponse, i=0):
         whole_response = ''
         cmd_and_descr = f'\n{(i + 1):<3} | {at_command.command:.<20} |>>| {at_command.description}\n'
         whole_response += cmd_and_descr
@@ -262,7 +272,8 @@ class NbIoTSender:
 
             if len(at_response.wanted) != 0:
                 for param in at_response.wanted:
-                    wanted_param = f">>WANTED PARAM: {param.name} : {param.value}  |>>| description= {param.description}\n"
+                    description_part = f" |>>| {param.description:<30}" if param.description else ""
+                    wanted_param = f">>WANTED PARAM: {param.name} : {param.value}  {description_part}\n"
                     whole_response += wanted_param
         print(whole_response)
         return whole_response
@@ -309,7 +320,7 @@ def main_menu():
         elif choice == '7':
             Write.toUniversalFile("".join(NbIoTSender().reopenSocket()))
         elif choice == '6':
-            NbIoTSender().reset()
+            NbIoTSender().resetDevice()
         elif choice == '5':
             Write.toUniversalFile("".join(NbIoTSender().readIpAddress()))
         elif choice == '4':

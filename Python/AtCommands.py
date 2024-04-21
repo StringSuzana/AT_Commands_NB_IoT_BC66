@@ -41,7 +41,9 @@ at_read_power_supply_voltage = AtCommand(
     [
         AtResponse(
             Status.OK, response=["+CBC:<bcs>,<bcl>,<voltage>", "OK"],
-            wanted=[Param(name="<bcs>"), Param(name="<bcl>"), Param(name="<voltage>"), ]),
+            wanted=[Param(name="<bcs>", description="Battery charging status. 0 [Not charging]. 1 [Charging] 2 [Charging finished]"),
+                    Param(name="<bcl>", description="Battery charging level. 0–100 [Battery has 0–100 percent of capacity remaining]"),
+                    Param(name="<voltage>", description="Battery voltage. Unit: mV."), ]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
@@ -54,9 +56,16 @@ at_read_signal_strength_level_and_bit_error_rate = AtCommand(
     [
         AtResponse(
             Status.OK, response=["+CSQ:<rssi>,<ber>", "OK"],
-            wanted=[Param(name="<rssi>"), Param(name="<ber>")]),
+            wanted=[Param(
+                name="<rssi>", description="Received signal strength level. "
+                                           "0 [-113 dBm or less]. "
+                                           "1 [-111 dBm]. "
+                                           "2–30 [-109 to -53 dBm]. "
+                                           "31 -51 [dBm or greater]. "
+                                           "99 [Not known or not detectable]"),
+                Param(name="<ber>")]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
-        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+
     ],
     max_wait_for_response=1)
 at_read_pdp_address = AtCommand(
@@ -98,8 +107,7 @@ at_read_pdp_address = AtCommand(
                     Param(name="<PDP_addr_1>", response_row=2),
                     Param(name="<PDP_addr_2>", response_row=2),
                     ]),
-        AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
-        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
 
@@ -112,8 +120,7 @@ at_read_ue_ip_address = AtCommand(
         AtResponse(
             Status.OK, response=["+QIPADDR:<IP_addr>", "OK"],
             wanted=[Param(name="<IP_addr>")]),
-        AtResponse(Status.ERROR, response=["ERROR"], wanted=[]),
-        AtResponse(Status.ERROR, response=["+CME ERROR:<err>"], wanted=[Param(name="<err>")])
+        AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
     max_wait_for_response=1)
 '''
@@ -170,15 +177,27 @@ at_write_eps_status_codes = AtCommand(
             "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
             "OK"],
         wanted=[Param(name="<n>"),
-                Param(name="<stat>"),
-                Param(name="<tac>"),
-                Param(name="<ci>"),
-                Param(name="<AcT>"),
-                Param(name="<cause_type>"),
-                Param(name="<reject_cause>"),
-                Param(name="<Active-Time>"),
-                Param(name="<Periodic-TAU>"),
-
+                Param(
+                    name="<stat>", description="EPS registration status. "
+                                               "0 [Not registered, MT is not currently searching an operator to register to.] "
+                                               "1 [Registered, home network] "
+                                               "2 [Not registered, but MT is currently trying to attach or searching an operator to register to.] "
+                                               "3 [Registration denied] "
+                                               "4 [Unknown (e.g. out of E-UTRAN coverage)] "
+                                               "5 [Registered, roaming]"),
+                Param(name="<tac>", description="Two bytes tracking area code in hexadecimal format (e.g. '00C3' equals 195 in decimal)."),
+                Param(name="<ci>", description="Four-byte E-UTRAN cell ID in hexadecimal format."),
+                Param(name="<AcT>", description="Access technology of the registered network. 7 [E-UTRAN]. 9 [E-UTRAN (NB-S1 mode)]"),
+                Param(
+                    name="<cause_type>",
+                    description="The type of <reject_cause> 0 [<reject_cause> contains an EMM cause value] 1 [<reject_cause> contains a manufacturer-specific cause value]"),
+                Param(name="<reject_cause>", description="Contains the cause of the registration failure"),
+                Param(
+                    name="<Active-Time>",
+                    description="Bits 5 to 1 represents the binary coded timer value.Bits 8 to 6 defines the timer value unit for the GPRS timer"),
+                Param(
+                    name="<Periodic-TAU>",
+                    description="Bits 5 to 1 represents the binary coded timer value. Bits 8 to 6 defines the timer value unit")
                 ]),
         AtResponse(
             Status.OK, response=["OK"], wanted=[]),
@@ -197,14 +216,29 @@ at_read_eps_status_codes = AtCommand(
                 "+CEREG:<n>,<stat>,<tac>,<ci>,<AcT>,<cause_type>,<reject_cause>,<Active-Time>,<Periodic-TAU>",
                 "OK"],
             wanted=[Param(name="<n>"),
-                    Param(name="<stat>"),
-                    Param(name="<tac>"),
-                    Param(name="<ci>"),
-                    Param(name="<AcT>"),
-                    Param(name="<cause_type>"),
-                    Param(name="<reject_cause>"),
-                    Param(name="<Active-Time>"),
-                    Param(name="<Periodic-TAU>")
+                    Param(
+                        name="<stat>", description="EPS registration status. "
+                                                   "0 [Not registered, MT is not currently searching an operator to register to.] "
+                                                   "1 [Registered, home network] "
+                                                   "2 [Not registered, but MT is currently trying to attach or searching an operator to register to.] "
+                                                   "3 [Registration denied] "
+                                                   "4 [Unknown (e.g. out of E-UTRAN coverage)] "
+                                                   "5 [Registered, roaming]"),
+                    Param(
+                        name="<tac>",
+                        description="Two bytes tracking area code in hexadecimal format (e.g. '00C3' equals 195 in decimal)."),
+                    Param(name="<ci>", description="Four-byte E-UTRAN cell ID in hexadecimal format."),
+                    Param(name="<AcT>", description="Access technology of the registered network. 7 [E-UTRAN]. 9 [E-UTRAN (NB-S1 mode)]"),
+                    Param(
+                        name="<cause_type>",
+                        description="The type of <reject_cause> 0 [<reject_cause> contains an EMM cause value] 1 [<reject_cause> contains a manufacturer-specific cause value]"),
+                    Param(name="<reject_cause>", description="Contains the cause of the registration failure"),
+                    Param(
+                        name="<Active-Time>",
+                        description="Bits 5 to 1 represents the binary coded timer value.Bits 8 to 6 defines the timer value unit for the GPRS timer"),
+                    Param(
+                        name="<Periodic-TAU>",
+                        description="Bits 5 to 1 represents the binary coded timer value. Bits 8 to 6 defines the timer value unit")
                     ]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
@@ -361,8 +395,8 @@ at_reset = AtCommand(
 '''
 Enable PDP and connect to PDN sequence
 '''
-at_write_create_pdp_context = AtCommand(
-    command='AT+CGDCONT=1,"IP","iot.vip.hr"',  # iot.ht.hr
+at_write_create_pdp_context_set_apn = AtCommand(
+    command='AT+CGDCONT=1,"IP","iot.ht.hr"',
     description="Create new PDP context command [AT+CGDCONT=<cid>,<PDP_type>,<APN>]",
     long_description="",
     read_response_method=Read.answerWithWantedParams,
@@ -428,18 +462,18 @@ at_read_pdp_context_statuses = AtCommand(
             Status.OK, response=["+CGACT:<cid>,<state>", "OK"], wanted=[Param(name="<cid>"), Param(name="<state>")]),
         AtResponse(
             Status.OK, response=["+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "OK"],
-            wanted=[Param(name="<cid>", response_row=0),
-                    Param(name="<state>", response_row=0),
-                    Param(name="<cid>", response_row=1),
-                    Param(name="<state>", response_row=1)]),
+            wanted=[Param(name="<cid>", response_row=0, description="context id"),
+                    Param(name="<state>", response_row=0, description="0 [Deactivated]. 1 [Activated]"),
+                    Param(name="<cid>", response_row=1, description="context id"),
+                    Param(name="<state>", response_row=1, description="0 [Deactivated]. 1 [Activated]")]),
         AtResponse(
             Status.OK, response=["+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "+CGACT:<cid>,<state>", "OK"],
-            wanted=[Param(name="<cid>", response_row=0),
-                    Param(name="<state>", response_row=0),
-                    Param(name="<cid>", response_row=1),
-                    Param(name="<state>", response_row=1),
-                    Param(name="<cid>", response_row=2),
-                    Param(name="<state>", response_row=2)
+            wanted=[Param(name="<cid>", response_row=0, description="context id"),
+                    Param(name="<state>", response_row=0, description="0 [Deactivated]. 1 [Activated]"),
+                    Param(name="<cid>", response_row=1, description="context id"),
+                    Param(name="<state>", response_row=1, description="0 [Deactivated]. 1 [Activated]"),
+                    Param(name="<cid>", response_row=2, description="context id"),
+                    Param(name="<state>", response_row=2, description="0 [Deactivated]. 1 [Activated]")
                     ]),
         AtResponse(Status.OK, response=["NO CARRIER"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
@@ -477,9 +511,16 @@ at_write_activate_pdn_ctx = AtCommand(
         # AtResponse(Status.OK, response=["+QGACT:<cid>,<type>,<result>,<activated_PDP_type>","OK"], wanted=[]),
         AtResponse(
             Status.OK, response=["+QGACT:<cid>", "OK", "+QGACT:<cid>,<type>,<result>,<activated_PDP_type>"],
-            wanted=[Param(name="<cid>", response_row=1),
-                    Param(name="<result>", response_row=1),
-                    Param(name="<activated_PDP_type>", response_row=1)]),
+            wanted=[Param(name="<cid>", response_row=1, description="context ID"),
+                    Param(
+                        name="<result>", response_row=1, description="The result of activation/deactivation. "
+                                                                     "0 [Failure]. 1 [Successful]"),
+                    Param(
+                        name="<activated_PDP_type>", response_row=1, description="It is the PDP type (ACTUALLY activated). "
+                                                                                 "1 [IPv4]. "
+                                                                                 "2 [IPv6]. "
+                                                                                 "3 [IPv4v6]. "
+                                                                                 "4 [Non-IP]")]),
         AtResponse(Status.OK, response=["+QGACT:<cid>,<type>,<result>,<activated_PDP_type>", "OK"], wanted=[]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=1)
@@ -493,7 +534,7 @@ AT_WRITE_OPEN_SOCKET_SERVICE = 'AT+QIOPEN=1,0,"UDP","20.234.113.19",4445,4445,1,
 '''
 
 at_open_socket = AtCommand(
-    command='AT+QIOPEN=1,0,"UDP",<IP_address>,<remote_port>,5555,<access_mode>,0',
+    command='AT+QIOPEN=<contextID>,0,"UDP",<IP_address>,<remote_port>,5555,<access_mode>,0',
     description="This command is used to open a socket service. "
                 "Provide: <IP_address>,<remote_port> and <access_mode>",
     long_description="The service type can be specified by <service_type>, "
@@ -507,13 +548,13 @@ at_open_socket = AtCommand(
     expected_responses=[
         AtResponse(
             Status.OK, response=["OK", "+QIOPEN:<connectID>,<err>"],
-            wanted=[Param(name="<connectID>", response_row=1),
+            wanted=[Param(name="<connectID>", response_row=1, description="Socket service index. The range is 0-4."),
                     Param(name="<err>", response_row=1)]),
         AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])],
     max_wait_for_response=60)
 
 at_close_socket = AtCommand(
-    command='AT+QICLOSE=0',
+    command='AT+QICLOSE=0',#here is specified connectID
     description="AT+QICLOSE=<connectID> This command is used to close a socket service.",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[
@@ -524,8 +565,10 @@ at_close_socket = AtCommand(
     max_wait_for_response=1)
 
 at_read_socket_status = AtCommand(
-    command='AT+QISTATE=0,1',
-    description='AT+QISTATE=<query_type>,<contextID> Query the state of socket for contextID.',
+    command='AT+QISTATE=0,<contextID>',
+    description='AT+QISTATE=<query_type>,<contextID> Query the state of socket for contextID. '
+                'if <query_type> == 0, Query connection status by <contextID>, '
+                'if <query_type> == 1, Query connection status by <connectID>',
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[AtResponse(
         Status.OK,
@@ -533,7 +576,7 @@ at_read_socket_status = AtCommand(
                   "OK"],
         wanted=[
             Param(name="<connectID>", response_row=0, description="Integer type. Socket service index. The range is 0-4."),
-            Param(name="<service_type>", response_row=0),
+            Param(name="<service_type>", response_row=0, description="Service type TCP/UDP"),
             Param(name="<IP_address>", response_row=0, description="IP address of remote client."),
             Param(name="<remote_port>", response_row=0),
             Param(name="<local_port>", response_row=0),
@@ -541,7 +584,7 @@ at_read_socket_status = AtCommand(
                 name="<socket_state>", response_row=0,
                 description="0 [Initial]: client connection has not been established. "
                             "1 [Connecting]: client is connecting. "
-                            "2 [Connected]: client connection has been established. "
+                            "2 [Connected]: client connected. "
                             "3 [Closing]: client connection is closing. "
                             "4 [Remote Closing]: client connection being closed by the remote server"),
             Param(name="<contextID>", response_row=0, description="Integer type. Context ID. The range is 1-3."),

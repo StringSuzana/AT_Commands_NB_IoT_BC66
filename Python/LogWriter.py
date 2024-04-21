@@ -4,7 +4,7 @@ from datetime import datetime
 class Write:
     @staticmethod
     def toUniversalFile(text):
-        with open(file='logs/at_log.txt', mode='a', encoding='ASCII') as f:
+        with open(file='logs/at_log.txt', mode='a', encoding='utf-8') as f:
             f.write(text)
 
     @staticmethod

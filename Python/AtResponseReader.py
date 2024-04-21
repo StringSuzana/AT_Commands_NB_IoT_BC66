@@ -115,7 +115,13 @@ class Read:
 
                 param_index = findIndex(arr=expected_row, element=wanted.name)
                 if param_index != -1:
-                    res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
+                    if result_status == Status.ERROR:
+                        command_name_end_index = response_row[param_index].index(":")
+                        response_command_name = response_row[param_index][:command_name_end_index]
+                        if response_command_name.startswith("+CME"):
+                            res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
+                    else:
+                        res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
                     wanted_params.append(res)
 
             return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
@@ -128,27 +134,21 @@ class Read:
     def setResponseAndStatus(self, for_status, expected_answer, received_answer):
         at_response_temp = []
 
-        for response_row in range(len(expected_answer)):
+        for row in range(len(expected_answer)):
             # if for example expected_answer response is OK and received_answer response is OK
-            if expected_answer[response_row] == received_answer[response_row]:
-                at_response_temp.append(received_answer[response_row])
+            if expected_answer[row] == received_answer[row]:
+                at_response_temp.append(received_answer[row])
                 continue
             else:
                 # This is for the case that expected_answer +ATCOMMAND: has parameters
-                if ":" in expected_answer[response_row]:
+                if ":" in expected_answer[row]:
                     # Check if the elements are both strings that start with "+ATCOMMAND:"
-                    command_name_end_index = expected_answer[response_row].index(":")
-                    response_command_name = expected_answer[response_row][:command_name_end_index]
+                    command_name_end_index = expected_answer[row].index(":")
+                    response_command_name = expected_answer[row][:command_name_end_index]
 
-                    if received_answer[response_row].startswith(response_command_name):
-                        at_response_temp.append(received_answer[response_row])
+                    if received_answer[row].startswith(response_command_name):
+                        at_response_temp.append(received_answer[row])
                         continue
-        #                   # If the elements are not similar, return False
-        #                   else:
-        #                       return False
-        #               # If this is not a row with +ATCOMMAND:<response>, return False
-        #               else:
-        #                   return False
 
         if not at_response_temp:
             self.at_response = [Status.ERROR.name]
@@ -156,4 +156,3 @@ class Read:
             self.at_response = at_response_temp
 
         self.at_status = for_status
-#       return True
