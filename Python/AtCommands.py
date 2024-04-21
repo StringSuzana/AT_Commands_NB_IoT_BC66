@@ -524,22 +524,31 @@ at_close_socket = AtCommand(
     max_wait_for_response=1)
 
 at_read_socket_status = AtCommand(
-    command='AT+QISTATE=1,0',
-    description='AT+QISTATE=<query_type>,<connectID> Query the state of socket.',
+    command='AT+QISTATE=0,1',
+    description='AT+QISTATE=<query_type>,<contextID> Query the state of socket for contextID.',
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[AtResponse(
         Status.OK,
         response=["+QISTATE:<connectID>,<service_type>,<IP_address>,<remote_port>,<local_port>,<socket_state>,<contextID>,<access_mode>]",
                   "OK"],
         wanted=[
-            Param(name="<connectID>", response_row=0),
+            Param(name="<connectID>", response_row=0, description="Integer type. Socket service index. The range is 0-4."),
             Param(name="<service_type>", response_row=0),
-            Param(name="<IP_address>", response_row=0),
+            Param(name="<IP_address>", response_row=0, description="IP address of remote client."),
             Param(name="<remote_port>", response_row=0),
             Param(name="<local_port>", response_row=0),
-            Param(name="<socket_state>", response_row=0),
-            Param(name="<contextID>", response_row=0),
-            Param(name="<access_mode>", response_row=0),
+            Param(
+                name="<socket_state>", response_row=0,
+                description="0 [Initial]: client connection has not been established. "
+                            "1 [Connecting]: client is connecting. "
+                            "2 [Connected]: client connection has been established. "
+                            "3 [Closing]: client connection is closing. "
+                            "4 [Remote Closing]: client connection being closed by the remote server"),
+            Param(name="<contextID>", response_row=0, description="Integer type. Context ID. The range is 1-3."),
+            Param(
+                name="<access_mode>", response_row=0, description="Data access mode. "
+                                                                  "0 Buffer access mode. "
+                                                                  "1 Direct push mode"),
         ]),
         AtResponse(status=Status.OK, response=["OK"], wanted=[]),
         AtResponse(status=Status.ERROR, response=["ERROR"], wanted=[])

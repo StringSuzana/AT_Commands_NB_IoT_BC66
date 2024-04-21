@@ -26,10 +26,10 @@ def findParamInArrayByRow(param: str, arr: List[Param], row: int) -> Param:
     return res
 
 
-def findParamInArrayByValue(param: str, arr: List[Param], param_value: str): #todo: fix
-    res = next(filter(lambda p: p.name == param and p.value == param_value, arr))
-    return res
-
+def findParamInArrayByValue(param_name: str, arr: List[Param], param_value: str):
+    for param in arr:
+        if param.name == param_name and param_value == param.value:
+            return param
 
 
 def findParamsInArray(param: str, arr: []):

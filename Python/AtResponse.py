@@ -13,6 +13,13 @@ class Param:
     response_row: int = 0
     description: str = "" #TODO: implement?
 
+    def __post_init__(self):
+        #remove all quotes (sometimes answer comes in more quotes than it should)
+        self.value = self.value.replace("'", "").replace('"', "")
+
+        self.value = f"{self.value}"
+        #print(f"Param created: {self.name}, with value: {self.value} and response_row: {self.response_row}")
+
 
 @dataclass
 class AtResponse:

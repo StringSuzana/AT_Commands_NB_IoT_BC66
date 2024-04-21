@@ -133,7 +133,7 @@ class NbIoTSender:
 
         return self.wholeResponse
 
-    def _defineAndActivatePdpContext(self):
+    def defineAndActivatePdpContext(self):
         """
         Third step in initialization of the device
         Defining and activating PDP/PDN context
@@ -154,14 +154,14 @@ class NbIoTSender:
         '''
         #:+CGDCONT: 1,"IP","iot.ht.hr","10.198.148.209",0,0,0,,,,,,0,,0,OK || <cid> :  1,  <PDP_type> : "IP", <APN> : "iot.ht.hr"
         all_pdp_contexts_response: AtResponse = self.executeAtCommand(at_read_pdp_contexts)
-        apn: Param = findParamInArrayByValue(param="<APN>", arr=all_pdp_contexts_response.wanted, param_value='iot.ht.hr')
+        apn: Param = findParamInArrayByValue(param_name="<APN>", arr=all_pdp_contexts_response.wanted, param_value='iot.ht.hr')
         cid: Param = findParamInArrayByRow(param="<cid>", arr=all_pdp_contexts_response.wanted, row=apn.response_row)
 
         all_pdp_context_status_response: AtResponse = self.executeAtCommand(at_read_pdp_context_statuses)  # +CGACT: 1,1,OK | <cid> <state>
-        param: Param = findParamInArrayByValue(param="<cid>", arr=all_pdp_context_status_response.wanted, param_value=cid.value)
+        param: Param = findParamInArrayByValue(param_name="<cid>", arr=all_pdp_context_status_response.wanted, param_value=cid.value)
         status: Param = findParamInArrayByRow(param="<state>", arr=all_pdp_context_status_response.wanted, row=param.response_row)
 
-        if status == "1":
+        if status.value == "1":
             # everything is activated, skip activation
             print(f"PDP context already activated. cid {cid.value}, apn {apn.value}, state {status.value}")
             pass
@@ -189,7 +189,7 @@ class NbIoTSender:
 
         self._initBasicFunctionalities()
         self._networkRegistration()
-        self._defineAndActivatePdpContext()
+        self.defineAndActivatePdpContext()
 
         return self.wholeResponse
 
@@ -240,19 +240,16 @@ class NbIoTSender:
 
     def executeAtCommand(self, at: AtCommand, i: int = 0):
         cmd_and_descr = f'\n{(i + 1):<3} | {at.command:.<20} |>>| {at.description}\n'
-        print(cmd_and_descr)  # this is only if I want to find out which is the last command that the program was stuck on
+        #print(cmd_and_descr)  # this is only if I want to find out which is the last command that the program was stuck on
         Sender().sendAtCommand(ser=ser, command=at.command)
         at_response: AtResponse = Read().readAtResponse(serial=ser, at_command_obj=at)
         self.wholeResponse += self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
         return at_response
 
-    def executeAtCommandSequence(self, sequence) -> string:
-        whole_response = ''
+    def executeAtCommandSequence(self, sequence):
         for i, at in enumerate(sequence):
-            at_response: AtResponse = self.executeAtCommand(at, i)
-            # text_response = self.makeTextFromResponse(at_command=at, at_response=at_response, i=i)
-            # whole_response += text_response
-        return whole_response
+            self.executeAtCommand(at, i)
+
 
     def makeTextFromResponse(self, at_command, at_response: AtResponse, i=0):
         whole_response = ''
@@ -265,7 +262,7 @@ class NbIoTSender:
 
             if len(at_response.wanted) != 0:
                 for param in at_response.wanted:
-                    wanted_param = f">>WANTED PARAM: {param.name} : {param.value}\n"
+                    wanted_param = f">>WANTED PARAM: {param.name} : {param.value}  |>>| description= {param.description}\n"
                     whole_response += wanted_param
         print(whole_response)
         return whole_response
@@ -288,7 +285,8 @@ def main_menu():
                             '5. Read IP address',
                             '6. Reset device',
                             '7. Open socket',
-                            '8. Close the program'
+                            '8. Define And Activate Pdp Context',
+                            '9. Close the program'
                             ],
                 'filter': lambda val: val[0:1:]  # I want just the number
             },
@@ -303,16 +301,17 @@ def main_menu():
         answers = prompt(questions, style=MenuStyle.basic)
         choice = answers.get(NB_IOT_MAIN_MENU)
         print(answers)
-        if choice == '8':
+        if choice == '9':
             print("Exiting the menu.")
             break
+        elif choice == '8':
+            Write.toUniversalFile("".join(NbIoTSender().defineAndActivatePdpContext()))
         elif choice == '7':
             Write.toUniversalFile("".join(NbIoTSender().reopenSocket()))
         elif choice == '6':
             NbIoTSender().reset()
         elif choice == '5':
             Write.toUniversalFile("".join(NbIoTSender().readIpAddress()))
-            pass
         elif choice == '4':
             Write.toUniversalFile("".join(NbIoTSender().doInitialSetup()))
         elif choice == '3':

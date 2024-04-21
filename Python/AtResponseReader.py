@@ -115,7 +115,7 @@ class Read:
 
                 param_index = findIndex(arr=expected_row, element=wanted.name)
                 if param_index != -1:
-                    res = Param(name=wanted.name, value=response_row[param_index])
+                    res = Param(name=wanted.name, value=response_row[param_index], description=wanted.description)
                     wanted_params.append(res)
 
             return AtResponse(status=result_status, response=result_array, wanted=wanted_params)
