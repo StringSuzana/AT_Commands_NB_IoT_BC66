@@ -222,7 +222,7 @@ class NbIoTSender:
         socket_status_response: AtResponse = self.executeAtCommand(
             at_read_socket_status.replaceParamInCommand("<contextID>", self.context_id))
         socket_state = findParamInArray("<socket_state>", socket_status_response.wanted)
-        if socket_state.value == str(SocketStatus.CONNECTED.value):
+        if socket_state and socket_state.value == str(SocketStatus.CONNECTED.value):
             print(f"Socket connected for contextID {self.context_id}")
         else:
             # self.executeAtCommand(at_close_socket) #here is specified connectID

@@ -75,37 +75,31 @@ at_read_pdp_address = AtCommand(
     expected_responses=
     [
         AtResponse(
-            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>",
                                  "OK"],
             wanted=[Param(name="<cid>"),
-                    Param(name="<PDP_addr_1>"),
-                    Param(name="<PDP_addr_2>"),
+                    Param(name="<PDP_addr_1>")
                     ]),
         AtResponse(
-            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
-                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>",
                                  "OK"],
             wanted=[Param(name="<cid>", response_row=0),
                     Param(name="<PDP_addr_1>", response_row=0),
-                    Param(name="<PDP_addr_2>", response_row=0),
                     Param(name="<cid>", response_row=1),
                     Param(name="<PDP_addr_1>", response_row=1),
-                    Param(name="<PDP_addr_2>", response_row=1),
                     ]),
         AtResponse(
-            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
-                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
-                                 "+CGPADDR:<cid>,<PDP_addr_1>,<PDP_addr_2>",
+            Status.OK, response=["+CGPADDR:<cid>,<PDP_addr_1>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>",
+                                 "+CGPADDR:<cid>,<PDP_addr_1>",
                                  "OK"],
             wanted=[Param(name="<cid>", response_row=0),
                     Param(name="<PDP_addr_1>", response_row=0),
-                    Param(name="<PDP_addr_2>", response_row=0),
                     Param(name="<cid>", response_row=1),
                     Param(name="<PDP_addr_1>", response_row=1),
-                    Param(name="<PDP_addr_2>", response_row=1),
                     Param(name="<cid>", response_row=2),
                     Param(name="<PDP_addr_1>", response_row=2),
-                    Param(name="<PDP_addr_2>", response_row=2),
                     ]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
@@ -120,9 +114,13 @@ at_read_ue_ip_address = AtCommand(
         AtResponse(
             Status.OK, response=["+QIPADDR:<IP_addr>", "OK"],
             wanted=[Param(name="<IP_addr>")]),
+        AtResponse(
+            Status.OK, response=["+QIPADDR:<IP_addr>", "+QIPADDR:<IP_addr>", "OK"],
+            wanted=[Param(name="<IP_addr>", response_row=0),
+                    Param(name="<IP_addr>", response_row=1)]),
         AtResponse(Status.ERROR, response=["ERROR"], wanted=[])
     ],
-    max_wait_for_response=1)
+    max_wait_for_response=2)
 '''
 Basic Setup
 '''
@@ -554,7 +552,7 @@ at_open_socket = AtCommand(
     max_wait_for_response=60)
 
 at_close_socket = AtCommand(
-    command='AT+QICLOSE=0',#here is specified connectID
+    command='AT+QICLOSE=0',  # here is specified connectID
     description="AT+QICLOSE=<connectID> This command is used to close a socket service.",
     read_response_method=Read.answerWithWantedParams,
     expected_responses=[

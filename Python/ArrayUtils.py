@@ -16,9 +16,10 @@ def containsStatus(status: str, array: []):
     return any(re.search(pattern, item, re.IGNORECASE) for item in array)
 
 
-def findParamInArray(param: str, arr: []) -> Param:
-    res = next(filter(lambda p: p.name == param, arr))
-    return res
+def findParamInArray(param_name: str, arr: List[Param]) -> Param:
+    for param in arr:
+        if param.name == param_name:
+            return param
 
 
 def findParamInArrayByRow(param: str, arr: List[Param], row: int) -> Param:
